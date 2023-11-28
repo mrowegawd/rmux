@@ -1,4 +1,4 @@
-# RunMux
+# RMux
 
 Add the following file configuration `.rmuxrc.json`, example:
 
