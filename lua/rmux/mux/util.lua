@@ -17,7 +17,7 @@ function M.pane_toggle_zoom()
 end
 
 function M.pane_capture(pane_num, grep_cmd)
-	local cmd = [[!tmux capture-pane -pJS - -t ]] .. pane_num .. " | grep -oiE '" .. grep_cmd .. "'"
+	local cmd = [[!tmux capture-pane -pJS - -t ]] .. pane_num .. " | sort -r | grep -oiE '" .. grep_cmd .. "'"
 	return vim.api.nvim_exec2(cmd, { output = true })
 end
 

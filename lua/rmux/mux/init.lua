@@ -74,6 +74,12 @@ local function __insert_to_tbl_opened_panes(pane_id, pane_num, open_pane, state_
 	})
 end
 
+local function __update_item_tbl_opened_panes(fn)
+	for idx, panes in pairs(Config.settings.base.tbl_opened_panes) do
+		fn(idx, panes)
+	end
+end
+
 function M.back_to_pane_one()
 	vim.fn.system("tmux select-pane -t 1")
 end
@@ -175,6 +181,25 @@ function M.send_runfile(opts, state_cmd)
 			end
 		end
 	end
+
+	__update_item_tbl_opened_panes(function(_, panes)
+		local pane_targetc = __get_config_state_cmd_pane(state_cmd)
+		if opts.command ~= pane_targetc.command then
+			if panes.state_cmd == pane_targetc.state_cmd then
+				panes.command = opts.command
+			end
+		end
+		if opts.regex ~= pane_targetc.regex then
+			if panes.state_cmd == pane_targetc.state_cmd then
+				panes.regex = opts.regex
+			end
+		end
+		if opts.include_cwd ~= pane_targetc.include_cwd then
+			if panes.state_cmd == pane_targetc.state_cmd then
+				panes.include_cwd = opts.include_cwd
+			end
+		end
+	end)
 
 	-- After the pane_id
 	-- now we send the commands to the correct pane target

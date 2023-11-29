@@ -128,9 +128,9 @@ local cmds = {
 	end,
 	--  ────────────────────────────────────────────────────────────
 	["RmuxSHOWConfig"] = function()
-		-- print(vim.inspect(Config.settings))
-		print(vim.inspect(Config.settings.base.tbl_opened_panes))
-		print(vim.inspect(Config.settings.sendID))
+		print(vim.inspect(Config.settings))
+		-- print(vim.inspect(Config.settings.base.tbl_opened_panes))
+		-- print(vim.inspect(Config.settings.sendID))
 	end,
 	["RmuxEDITConfig"] = function()
 		Call.command(true, "edit_or_reload_config")

@@ -83,7 +83,7 @@ local function _Xedit_or_reload_config(isEdit, isFzf)
 
 	if not Util.exists(file_rc) then
 		if Config.settings.base.rmuxpath ~= nil and #Config.settings.base.rmuxpath > 0 then
-			Fzf.target_pane()
+			Fzf.select_rmuxfile()
 		else
 			Util.info({
 				msg = "File " .. Config.settings.base.file_rc .. " is not exists\nlemme create that for you",

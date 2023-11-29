@@ -85,7 +85,11 @@ function M.grep_err(opts, pane_num)
 
 	fzfopts.winopts.title = format_title(titleMsg:gsub("^%l", string.upper), "", "Boolean")
 	fzfopts.actions = vim.tbl_extend("keep", {}, Fzfmap_grepper.enter())
-	fzfopts.fzf_opts = { ["--header"] = [[default:'go-to-file']] }
+	fzfopts.fzf_opts = {
+		["--header"] = [[default:'go-to-file']],
+		["--no-sort"] = "",
+	}
+	fzfopts.sort = true
 	fzfopts.winopts.preview = { hidden = "hidden" }
 	fzfopts.winopts_fn = function()
 		local win_height = math.ceil(vim.api.nvim_get_option("lines") * 0.5)
