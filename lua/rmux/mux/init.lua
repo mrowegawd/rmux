@@ -7,10 +7,13 @@ local M = {}
 
 local tmux_send = "tmux send -t "
 
+local current_pane_id
+
 local function __respawn_pane(send_pane)
 	if MuxUtil.get_total_active_panes() == 1 then
+		local cur_pane_id = MuxUtil.get_current_pane_id()
 		vim.fn.system("tmux split-window -h -p 20")
-		M.back_to_pane_one()
+		M.back_to_pane(cur_pane_id)
 
 		Config.settings.sendID = MuxUtil.get_id_next_pane()
 	end
@@ -27,12 +30,14 @@ end
 
 local function __close_all()
 	local total_panes = MuxUtil.get_total_active_panes()
-	if total_panes > 1 then
-		local cur_pane_id = MuxUtil.get_pane_id(MuxUtil.get_current_pane_id())
+	if current_pane_id ~= nil then
+		current_pane_id = MuxUtil.get_current_pane_id()
+	end
 
+	if total_panes > 1 then
 		for i = 1, total_panes do
 			local pane_id = MuxUtil.get_pane_id(i)
-			if pane_id ~= cur_pane_id then
+			if current_pane_id ~= pane_id then
 				vim.schedule(function()
 					MuxUtil.kill_pane(pane_id)
 				end)
@@ -80,8 +85,12 @@ local function __update_item_tbl_opened_panes(fn)
 	end
 end
 
+function M.back_to_pane(cur_pane_id)
+	vim.fn.system("tmux select-pane -t " .. cur_pane_id)
+end
+
 function M.back_to_pane_one()
-	vim.fn.system("tmux select-pane -t 1")
+	M.back_to_pane(current_pane_id)
 end
 
 function M.send(cmd, num_pane, isSendLine)
@@ -146,9 +155,12 @@ function M.close_all_task_panes()
 end
 
 function M.close_all_panes()
+	current_pane_id = MuxUtil.get_current_pane_id()
+
 	__close_all()
+
 	Config.settings.base.tbl_opened_panes = {}
-	M.back_to_pane_one()
+	M.back_to_pane(current_pane_id)
 end
 
 function M.send_runfile(opts, state_cmd)
@@ -310,6 +322,8 @@ function M.openREPL(langs_opts)
 end
 
 function M.open_multi_panes(layouts, state_cmd)
+	current_pane_id = MuxUtil.get_current_pane_id()
+
 	for idx, layout in pairs(layouts) do
 		if layout.open_pane ~= nil and #layout.open_pane > 0 then
 			local layouts_idx = layouts[idx]

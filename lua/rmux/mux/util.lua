@@ -55,7 +55,9 @@ function M.get_pane_target(pane_num)
 end
 
 function M.kill_pane(pane_id)
-	return vim.fn.system("tmux kill-pane -t " .. pane_id)
+	if #pane_id > 0 then
+		return vim.fn.system("tmux kill-pane -t " .. pane_id)
+	end
 end
 
 -- function M.fix_pane_closed()
