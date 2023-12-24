@@ -17,7 +17,7 @@ function M.pane_toggle_zoom()
 end
 
 function M.pane_capture(pane_num, grep_cmd)
-	local cmd = [[!tmux capture-pane -pJS - -t ]] .. pane_num .. " | sort -r | grep -oiE '" .. grep_cmd .. "'"
+	local cmd = [[!tmux capture-pane -pJS - -t ]] .. pane_num .. " | sort -r | grep -oiE '" .. grep_cmd .. "' | tac"
 	return vim.api.nvim_exec2(cmd, { output = true })
 end
 
@@ -35,6 +35,10 @@ end
 
 function M.get_total_active_panes()
 	return tonumber(M.normalize_return(vim.fn.system("tmux list-panes | wc -l")))
+end
+
+function M.get_last_active_pane()
+	return M.normalize_return(vim.fn.system("tmux list-panes | tail -1 | cut -d':' -f1"))
 end
 
 function M.get_current_pane_id()

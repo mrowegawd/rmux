@@ -6,7 +6,7 @@ local default_settings = {
 		setnotif = true,
 		auto_run_tasks = true,
 		tbl_opened_panes = {},
-		run_with = "tmux", -- tmux, tt, toggleterm (tt.nvim)
+		run_with = "mux", -- tmux, tt, toggleterm (tt.nvim)
 		auto_kill = true,
 		rmuxpath = vim.fn.expand("~/.config/nvim/runmux"),
 	},

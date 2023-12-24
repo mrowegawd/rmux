@@ -125,8 +125,18 @@ end
 --  ╰──────────────────────────────────────────────────────────╯
 
 function M.command(opts, state_cmd)
-	opts = opts or ""
+	assert(
+		vim.tbl_contains({ "mux", "tt", "toggleterm" }, Config.settings.base.run_with),
+		"run_with must be a 'mux' or 'tt' "
+	)
 
+	if Config.settings.base.run_with == "mux" then
+		if not os.getenv("TMUX") then
+			Config.settings.base.run_with = "toggleterm"
+		end
+	end
+
+	opts = opts or ""
 	local call_cmds = {
 		["run_file"] = _run_file,
 		["run_tasks_all"] = _run_tasks_all,

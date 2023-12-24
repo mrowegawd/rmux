@@ -18,20 +18,15 @@ local function __respawn_pane(send_pane)
 		Config.settings.sendID = MuxUtil.get_id_next_pane()
 	end
 
-	if type(Config.settings.sendID) == "string" and #Config.settings.sendID == 0 then
-		send_pane = MuxUtil.get_total_active_panes()
-		Config.settings.sendID = MuxUtil.get_pane_id(send_pane)
-	end
-
 	if not MuxUtil.pane_exists(Config.settings.sendID) then
-		Config.settings.sendID = MuxUtil.get_pane_id(MuxUtil.get_total_active_panes())
+		Config.settings.sendID = MuxUtil.get_pane_id(MuxUtil.get_last_active_pane())
 	end
 end
 
 local function __close_all()
 	local total_panes = MuxUtil.get_total_active_panes()
 	if current_pane_id ~= nil then
-		current_pane_id = MuxUtil.get_current_pane_id()
+		current_pane_id = MuxUtil.get_pane_id(MuxUtil.get_current_pane_id())
 	end
 
 	if total_panes > 1 then
@@ -142,15 +137,6 @@ function M.send_interrupt(send_all)
 end
 
 function M.close_all_task_panes()
-	local tot_panes = Config.settings.base.tbl_opened_panes
-	if #tot_panes > 0 then
-		for _, pane in pairs(tot_panes) do
-			vim.schedule(function()
-				MuxUtil.kill_pane(pane.pane_id)
-			end)
-		end
-	end
-
 	__close_all()
 end
 
@@ -166,14 +152,11 @@ end
 function M.send_runfile(opts, state_cmd)
 	-- `true` paksa spawn 1 pane, jika terdapat hanya satu pane saja yang active
 	local open_pane
+	current_pane_id = MuxUtil.get_current_pane_id()
 	__respawn_pane(2)
 
 	if MuxUtil.pane_iszoom() then
 		MuxUtil.pane_toggle_zoom()
-	end
-
-	if not MuxUtil.pane_exists(Config.settings.sendID) then
-		Config.settings.sendID = MuxUtil.get_pane_id(MuxUtil.get_total_active_panes())
 	end
 
 	-- Check if `pane_target.pane_id` is not exists, we must update the `pane_target.pane_id`

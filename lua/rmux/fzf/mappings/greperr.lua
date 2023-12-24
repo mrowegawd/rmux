@@ -11,6 +11,11 @@ function M.enter()
 			local row = tonumber(fname[2])
 			local col = tonumber(fname[3])
 
+			local line_count = vim.api.nvim_buf_line_count(0)
+			if row < line_count then
+				row = row + 1
+			end
+
 			vim.cmd("e " .. fname[1])
 			vim.api.nvim_win_set_cursor(0, { row, col })
 		end,
