@@ -23,9 +23,6 @@ local function _run_tasks_all()
 	local layouts = Config.settings.langs.tasks.layout
 
 	require("rmux." .. Config.settings.base.run_with).open_multi_panes(layouts, state_cmd)
-	require("rmux." .. Config.settings.base.run_with).back_to_pane_one()
-	require("rmux." .. Config.settings.base.run_with).send_multi(state_cmd)
-
 	_auto_kill()
 end
 

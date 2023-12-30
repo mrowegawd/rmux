@@ -1,5 +1,5 @@
 local M = {}
-local buf
+local buf, win
 
 --  ╭──────────────────────────────────────────────────────────╮
 --  │                         GENERALS                         │
@@ -72,7 +72,7 @@ end
 
 local function create_win()
 	vim.api.nvim_command("botright vnew")
-	--  win = vim.api.nvim_get_current_win()
+	win = vim.api.nvim_get_current_win()
 	buf = vim.api.nvim_get_current_buf()
 
 	vim.api.nvim_buf_set_name(0, "result #" .. buf)
@@ -96,13 +96,19 @@ local function on_stdout(_, data)
 end
 
 function M.run_script_async(command)
+	if win and vim.api.nvim_win_is_valid(win) then
+		vim.api.nvim_win_close(win, true)
+	end
 	create_win()
+
 	vim.fn.jobstart(command, {
 		on_stdout = on_stdout,
 		on_stderr = on_stdout,
 		stdout_buffered = false,
 		stderr_buffered = false,
 	})
+
+	vim.cmd([[wincmd p]])
 end
 
 --  ╭──────────────────────────────────────────────────────────╮

@@ -144,6 +144,10 @@ function M.close_toggleterm()
 	vim.cmd([[ToggleTerm]])
 end
 
+function M.get_current_win_id()
+	return vim.api.nvim_get_current_win()
+end
+
 function M.term_has_windows(term)
 	return toggleterm_ui.find_open_windows(function(buf)
 		return buf == term.bufnr

@@ -11,6 +11,8 @@ local toggleterm = require("toggleterm")
 local ToggletermUtil = require("rmux.toggleterm.util")
 local M = {}
 
+local current_win_id, current_cur_id
+
 local function __respawn_term()
 	local term, _ = ToggletermUtil.get_terminals()
 	if term and #term == 0 then
@@ -34,34 +36,7 @@ function M.send_visual(send_pane)
 	toggleterm.send_lines_to_terminal("visual_selection", true, { range = true, nargs = "?" })
 end
 
-function M.send_runfile(opts, state_cmd)
-	-- __respawn_term()
-
-	-- local tbl_opened_panes = Constant.get_tbl_opened_panes()
-	-- local term_ops = Constant.find_state_cmd_on_tbl_opened_panes(state_cmd)
-	--
-	-- if Util.tablelength(tbl_opened_panes) == 0 then
-	-- 	local pane_id = tostring(Constant.get_sendID())
-	-- 	local pane_num = tostring(Constant.get_sendID())
-	-- 	local open_pane
-	-- 	Constant.set_insert_tbl_opened_panes(pane_id, pane_num, open_pane, state_cmd, opts.command, opts.regex)
-	-- 	M.send_runfile(opts, state_cmd)
-	-- else
-	-- 	if term_ops ~= nil then
-	-- 		local cmd_string
-	-- 		if opts.include_cwd then
-	-- 			local cwd = vim.fn.expand("%:p:h")
-	-- 			local fname = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(0), ":t")
-	-- 			cmd_string = opts.command .. " " .. cwd .. "/" .. fname
-	-- 		else
-	-- 			cmd_string = opts.command
-	-- 		end
-	-- 		-- print(cmd_string)
-	-- 		ToggletermUtil.close_toggleterm()
-	-- 		toggleterm.exec(cmd_string, tonumber(Constant.get_sendID()))
-	-- 	end
-	-- end
-
+function M.send_runfile(opts)
 	local cmd_string = vim.split(opts.command, " ")
 	if opts.include_cwd then
 		local cwd = vim.fn.expand("%:p:h")
@@ -127,14 +102,51 @@ function M.openREPL(opts, state_cmd)
 end
 
 function M.open_multi_panes(layouts, state_cmd)
-	print("not implemented yet")
+	current_win_id = ToggletermUtil.get_current_win_id()
+	current_cur_id = vim.api.nvim_win_get_cursor(0)
+
+	for idx, layout in pairs(layouts) do
+		if layout.open_pane ~= nil and #layout.open_pane > 0 then
+			local layouts_idx = layouts[idx]
+			-- `pane_id` is the command for create, open dan get the id of pane nya langsung
+			local pane_id = tostring(idx)
+			local pane_num = tostring(idx)
+
+			Constant.set_insert_tbl_opened_panes(
+				pane_id,
+				pane_num,
+				layouts_idx.open_pane,
+				state_cmd,
+				layouts_idx.command,
+				layouts_idx.regex
+			)
+		else
+			Util.warn({ msg = "Why did this happen?\n- There is no file .rmuxrc.json", setnotif = true })
+		end
+	end
+
+	M.send_multi(state_cmd)
+	M.back_to_win_one()
 end
 
-function M.back_to_pane_one()
-	print("not implemented yet")
+function M.back_to_win_one()
+	if current_win_id and vim.api.nvim_win_is_valid(current_win_id) then
+		vim.api.nvim_set_current_win(current_win_id)
+		vim.api.nvim_win_set_cursor(current_win_id, { current_cur_id[1], current_cur_id[2] })
+	end
 end
 function M.send_multi(state_cmd)
-	print("not implemented yet")
+	for _, pane in pairs(Constant.get_tbl_opened_panes()) do
+		if pane.state_cmd == state_cmd then
+			-- toggleterm.exec(pane.command, tonumber(pane.pane_id))
+			pane.command = string.gsub(pane.command, "'", "")
+			toggleterm.exec(pane.command, tonumber(pane.pane_id))
+		end
+	end
+
+	-- if #Constant.get_sendID() == "" then
+	-- 	Constant.set_sendID(MuxUtil.get_pane_id(MuxUtil.get_total_active_panes()))
+	-- end
 end
 
 return M

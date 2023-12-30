@@ -42,10 +42,6 @@ function M.back_to_pane(cur_pane_id)
 	vim.fn.system("tmux select-pane -t " .. cur_pane_id)
 end
 
-function M.back_to_pane_one()
-	M.back_to_pane(current_pane_id)
-end
-
 function M.send(cmd, num_pane, isSendLine)
 	isSendLine = isSendLine or false
 
@@ -279,6 +275,13 @@ function M.open_multi_panes(layouts, state_cmd)
 			Util.warn({ msg = "Why did this happen?\n- There is no file .rmuxrc.json", setnotif = true })
 		end
 	end
+
+	M.send_multi(state_cmd)
+	M.back_to_pane_one()
+end
+
+function M.back_to_pane_one()
+	M.back_to_pane(current_pane_id)
 end
 
 function M.send_multi(state_cmd)
