@@ -7,7 +7,7 @@ local M = {}
 local augroup = vim.api.nvim_create_augroup("RMUX_AUKILL", { clear = true })
 
 local function _auto_kill()
-	if Config.settings.base.auto_kill then
+	if Config.settings.base.auto_kill and Config.settings.base.run_with ~= "toggleterm" then
 		vim.api.nvim_create_autocmd("ExitPre", {
 			pattern = "*",
 			group = augroup,
@@ -43,16 +43,17 @@ local function _run_file()
 end
 
 local function _open_repl()
-	require("rmux." .. Config.settings.base.run_with).openREPL(Config.settings.langs.repl)
+	local state_cmd = Config.settings.provider_cmd.RUN_OPENREPL
+	require("rmux." .. Config.settings.base.run_with).openREPL(Config.settings.langs.repl, state_cmd)
 end
 
 local function _send_line()
-	require("rmux." .. Config.settings.base.run_with).send_line(Config.settings.sendID)
+	require("rmux." .. Config.settings.base.run_with).send_line()
 	_auto_kill()
 end
 
 local function _send_visual()
-	require("rmux." .. Config.settings.base.run_with).send_visual(Config.settings.sendID)
+	require("rmux." .. Config.settings.base.run_with).send_visual()
 	_auto_kill()
 end
 

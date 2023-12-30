@@ -1,5 +1,7 @@
+local Util = require("rmux.utils")
 local toggleterm = require("toggleterm.terminal")
 local Path = require("plenary.path")
+local toggleterm_ui = require("toggleterm.ui")
 
 local M = {}
 
@@ -12,10 +14,6 @@ end
 --- @return table, table A tuple containing a list of toggleterm/terminal objects and a table of options that will be used for
 --- creating the telescope entries.
 function M.get_terminals()
-	-- local bufnrs = vim.tbl_filter(function(b)
-	-- 	return vim.api.nvim_buf_get_option(b, "filetype") == "toggleterm"
-	-- end, vim.api.nvim_list_bufs())
-
 	local terms = toggleterm.get_all(true)
 	if #terms == 0 then
 		return {}, {}
@@ -138,7 +136,29 @@ function M.open_toggleterm(id, direction)
 		dir = nil
 	end
 
-	Terminal:new({ id = id, direction = direction })
+	return Terminal:new({ id = id, direction = direction }):toggle()
+end
+
+function M.close_toggleterm()
+	-- TODO: jika terspawn beberapa term, apakah harus di close semua?
+	vim.cmd([[ToggleTerm]])
+end
+
+function M.term_has_windows(term)
+	return toggleterm_ui.find_open_windows(function(buf)
+		return buf == term.bufnr
+	end)
+end
+
+function M.get_term_all()
+	return toggleterm.get_all()
+end
+function M.create_finder_files()
+	return "fd -d 1 -e json"
+end
+
+function M.create_finder_err(output)
+	return Util.rm_duplicates_tbl(output)
 end
 
 return M

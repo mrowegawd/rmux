@@ -1,5 +1,6 @@
 local Util = require("rmux.utils")
 local Config = require("rmux.config")
+local Constant = require("rmux.constant")
 local MuxUtil = require("rmux.mux.util")
 local Fzf = require("rmux.fzf")
 
@@ -9,17 +10,13 @@ local tmux_send = "tmux send -t "
 
 local current_pane_id
 
-local function __respawn_pane(send_pane)
+local function __respawn_pane()
 	if MuxUtil.get_total_active_panes() == 1 then
 		local cur_pane_id = MuxUtil.get_current_pane_id()
 		vim.fn.system("tmux split-window -h -p 20")
 		M.back_to_pane(cur_pane_id)
 
-		Config.settings.sendID = MuxUtil.get_id_next_pane()
-	end
-
-	if not MuxUtil.pane_exists(Config.settings.sendID) then
-		Config.settings.sendID = MuxUtil.get_pane_id(MuxUtil.get_last_active_pane())
+		Constant.set_sendID(tostring(MuxUtil.get_id_next_pane()))
 	end
 end
 
@@ -38,45 +35,6 @@ local function __close_all()
 				end)
 			end
 		end
-	end
-end
-
-local function __get_config_state_cmd_pane(state_cmd)
-	local _tbl = {}
-
-	for _, panes in pairs(Config.settings.base.tbl_opened_panes) do
-		if panes.state_cmd == state_cmd then
-			_tbl = panes
-		end
-	end
-	return _tbl
-end
-
-local function __insert_to_tbl_opened_panes(pane_id, pane_num, open_pane, state_cmd, command, regex)
-	vim.validate({
-		pane_id = { pane_id, "string", true },
-		open_num = { pane_num, "string", true },
-		open_pane = { open_pane, "string", true },
-		state_cmd = { state_cmd, "string", true },
-		command = { command, "string", true },
-		-- NOTE:
-		-- gimana cara nya membuat validate untuk 2 type (just like union)??
-		-- karena 'regex' ini, type nya adalah "string " | "table"
-		-- regex = { regex, "string", false },
-	})
-	return table.insert(Config.settings.base.tbl_opened_panes, {
-		pane_id = pane_id,
-		pane_num = pane_num,
-		open_pane = open_pane,
-		state_cmd = state_cmd,
-		command = command,
-		regex = regex,
-	})
-end
-
-local function __update_item_tbl_opened_panes(fn)
-	for idx, panes in pairs(Config.settings.base.tbl_opened_panes) do
-		fn(idx, panes)
 	end
 end
 
@@ -151,77 +109,71 @@ end
 
 function M.send_runfile(opts, state_cmd)
 	-- `true` paksa spawn 1 pane, jika terdapat hanya satu pane saja yang active
-	local open_pane
-	current_pane_id = MuxUtil.get_current_pane_id()
-	__respawn_pane(2)
+	__respawn_pane()
 
-	if MuxUtil.pane_iszoom() then
-		MuxUtil.pane_toggle_zoom()
-	end
+	-- current_pane_id = MuxUtil.get_current_pane_id()
+	-- if MuxUtil.pane_iszoom() then
+	-- 	MuxUtil.pane_toggle_zoom()
+	-- end
 
 	-- Check if `pane_target.pane_id` is not exists, we must update the `pane_target.pane_id`
-	local pane_target = __get_config_state_cmd_pane(state_cmd)
-	if pane_target.state_cmd ~= Config.settings.provider_cmd.RUN_FILE then
-		local pane_id = MuxUtil.get_pane_id(Config.settings.sendID)
-		local pane_num = MuxUtil.get_pane_num(Config.settings.sendID)
+	local tbl_opened_panes = Constant.get_tbl_opened_panes()
+	local term_ops = Constant.find_state_cmd_on_tbl_opened_panes(state_cmd)
 
-		if MuxUtil.pane_exists(pane_id) then
-			__insert_to_tbl_opened_panes(pane_id, pane_num, open_pane, state_cmd, opts.command, opts.regex)
+	if Util.tablelength(tbl_opened_panes) == 0 then
+		local pane_id = Constant.get_sendID()
+		if #pane_id > 0 then
+			local pane_num = MuxUtil.get_pane_num(Constant.get_sendID())
+			if MuxUtil.pane_exists(pane_id) then
+				local open_pane
+				Constant.set_insert_tbl_opened_panes(pane_id, pane_num, open_pane, state_cmd, opts.command, opts.regex)
+			end
+			M.send_runfile(opts, state_cmd)
+		else
+			Constant.set_sendID(tostring(MuxUtil.get_id_next_pane()))
+			M.send_runfile(opts, state_cmd)
 		end
 	else
-		local pane_id = MuxUtil.get_pane_id(Config.settings.sendID)
-		if MuxUtil.pane_exists(pane_id) then
-			for _, pane in pairs(Config.settings.base.tbl_opened_panes) do
-				pane.pane_id = pane_id
-			end
-		end
-	end
-
-	__update_item_tbl_opened_panes(function(_, panes)
-		local pane_targetc = __get_config_state_cmd_pane(state_cmd)
-		if opts.command ~= pane_targetc.command then
-			if panes.state_cmd == pane_targetc.state_cmd then
-				panes.command = opts.command
-			end
-		end
-		if opts.regex ~= pane_targetc.regex then
-			if panes.state_cmd == pane_targetc.state_cmd then
-				panes.regex = opts.regex
-			end
-		end
-		if opts.include_cwd ~= pane_targetc.include_cwd then
-			if panes.state_cmd == pane_targetc.state_cmd then
-				panes.include_cwd = opts.include_cwd
-			end
-		end
-	end)
-
-	-- After the pane_id
-	-- now we send the commands to the correct pane target
-	local pane_targetc = __get_config_state_cmd_pane(state_cmd)
-	local tmux_sendcmd = tmux_send .. pane_targetc.pane_id
-	local cmd_nvim = tmux_sendcmd .. " '" .. pane_targetc.command .. "'" .. " Enter"
-
-	if opts.include_cwd then
+		local cmd_nvim
 		local cwd = vim.fn.expand("%:p:h")
 		local fname = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(0), ":t")
 
-		cmd_nvim = tmux_sendcmd .. " '" .. pane_targetc.command .. " " .. cwd .. "/" .. fname .. "'" .. " Enter"
-	end
+		if term_ops ~= nil then
+			local tmux_sendcmd = tmux_send .. term_ops.pane_id
+			cmd_nvim = tmux_sendcmd .. " '" .. term_ops.command .. "'" .. " Enter"
+			tmux_sendcmd = tmux_send .. term_ops.pane_id
 
-	vim.fn.system(cmd_nvim)
+			if opts.include_cwd then
+				cmd_nvim = tmux_sendcmd .. " '" .. term_ops.command .. " " .. cwd .. "/" .. fname .. "'" .. " Enter"
+			end
+			vim.fn.system(cmd_nvim)
+		else
+			local tot_panes = MuxUtil.get_total_active_panes()
+			Constant.set_sendID(MuxUtil.get_pane_id(tot_panes))
+			local pane_id = Constant.get_sendID()
+			local pane_num = MuxUtil.get_pane_num(Constant.get_sendID())
+			local open_pane
+			Constant.set_insert_tbl_opened_panes(pane_id, pane_num, open_pane, state_cmd, opts.command, opts.regex)
+
+			M.send_runfile(opts, state_cmd)
+		end
+	end
 end
 
-function M.send_line(send_pane)
-	__respawn_pane(send_pane)
+function M.send_line()
+	__respawn_pane()
+
+	local send_pane = Constant.get_sendID()
 
 	local linenr = vim.api.nvim_win_get_cursor(0)[1]
 	vim.cmd("silent! " .. linenr .. "," .. linenr .. " :w  !tmux load-buffer -")
 	vim.fn.system("tmux paste-buffer -dpr -t " .. send_pane)
 end
 
-function M.send_visual(send_pane)
-	__respawn_pane(send_pane)
+function M.send_visual()
+	__respawn_pane()
+
+	local send_pane = Constant.get_sendID()
 
 	if MuxUtil.pane_iszoom() then
 		MuxUtil.pane_toggle_zoom()
@@ -289,15 +241,15 @@ end
 local status_pane_repl = false
 function M.openREPL(langs_opts)
 	if status_pane_repl then
-		if MuxUtil.pane_exists(Config.settings.sendID) then
+		if MuxUtil.pane_exists(Constant.get_sendID()) then
 			status_pane_repl = false
 		end
 	end
 
 	if not status_pane_repl then
-		__respawn_pane(1)
+		__respawn_pane()
 
-		local tmux_cmd = tmux_send .. Config.settings.sendID
+		local tmux_cmd = tmux_send .. Constant.get_sendID()
 		local cmd_nvim = tmux_cmd .. " '" .. langs_opts.command .. "'" .. " Enter"
 		vim.fn.system(cmd_nvim)
 		status_pane_repl = true
@@ -315,7 +267,7 @@ function M.open_multi_panes(layouts, state_cmd)
 				MuxUtil.normalize_return(vim.fn.system(layout.open_pane .. '\\; display-message -p "#{pane_id}"'))
 			local pane_num = MuxUtil.get_pane_num(pane_id)
 
-			__insert_to_tbl_opened_panes(
+			Constant.set_insert_tbl_opened_panes(
 				pane_id,
 				pane_num,
 				layouts_idx.open_pane,
@@ -330,20 +282,20 @@ function M.open_multi_panes(layouts, state_cmd)
 end
 
 function M.send_multi(state_cmd)
-	for _, panes in pairs(Config.settings.base.tbl_opened_panes) do
+	for _, panes in pairs(Constant.get_tbl_opened_panes()) do
 		if panes.state_cmd == state_cmd then
 			-- vim.fn.system(tmux_send .. panes.pane_id .. " '" .. panes.command .. "' " .. "Enter \\; last-pane")
 			vim.fn.system(tmux_send .. panes.pane_id .. " '" .. panes.command .. "' " .. "Enter")
 		end
 	end
 
-	if type(Config.settings.sendID) == "string" and #Config.settings.sendID == 0 then
-		Config.settings.sendID = MuxUtil.get_pane_id(MuxUtil.get_total_active_panes())
+	if #Constant.get_sendID() == "" then
+		Constant.set_sendID(MuxUtil.get_pane_id(MuxUtil.get_total_active_panes()))
 	end
 end
 
-function M.grep_string_pane(send_pane)
-	__respawn_pane(send_pane)
+function M.grep_string_pane()
+	__respawn_pane()
 
 	if #Config.settings.base.tbl_opened_panes == 0 then
 		return print("No active")

@@ -22,7 +22,10 @@ function M.pane_capture(pane_num, grep_cmd)
 end
 
 function M.pane_exists(pane_num)
-	return not (M.normalize_return(vim.fn.system("tmux display-message -t " .. pane_num .. " -p '#{pane_id}'")) == "")
+	-- return not (M.normalize_return(vim.fn.system("tmux display-message -t " .. pane_num .. " -p '#{pane_id}'")) == "")
+	return not (
+		M.normalize_return(vim.fn.system("tmux has-session -t " .. pane_num .. " 2>/dev/null && echo 123")) == ""
+	)
 end
 
 function M.get_pane_id(pane_num)
@@ -34,7 +37,7 @@ function M.get_pane_num(pane_id)
 end
 
 function M.get_total_active_panes()
-	return tonumber(M.normalize_return(vim.fn.system("tmux list-panes | wc -l")))
+	return tonumber(M.normalize_return(vim.fn.system("tmux display-message -p '#{window_panes}'")))
 end
 
 function M.get_last_active_pane()
