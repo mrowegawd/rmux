@@ -13,7 +13,13 @@ local current_pane_id
 local function __respawn_pane()
 	if MuxUtil.get_total_active_panes() == 1 then
 		local cur_pane_id = MuxUtil.get_current_pane_id()
-		vim.fn.system("tmux split-window -h -p 20")
+		local win_width = vim.api.nvim_get_option("columns")
+
+		local w = math.floor((win_width * 0.2) + 5)
+		if w < 30 then
+			w = 40
+		end
+		vim.fn.system(string.format("tmux split-window -h -p %s", w))
 		M.back_to_pane(cur_pane_id)
 
 		Constant.set_sendID(tostring(MuxUtil.get_id_next_pane()))
