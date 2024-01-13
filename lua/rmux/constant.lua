@@ -37,8 +37,8 @@ function M.get_tbl_opened_panes()
 end
 
 function M.update_tbl_opened_panes(fn)
-	for idx, panes in pairs(Config.settings.base.tbl_opened_panes) do
-		fn(idx, panes)
+	for idx, pane in pairs(Config.settings.base.tbl_opened_panes) do
+		fn(idx, pane)
 	end
 end
 

@@ -37,6 +37,34 @@ function M.send_visual(send_pane)
 end
 
 function M.send_runfile(opts)
+	-- __respawn_term()
+	--
+	-- local state_cmd = "run_file"
+	-- local tbl_opened_panes = Constant.get_tbl_opened_panes()
+	-- local term_ops = Constant.find_state_cmd_on_tbl_opened_panes(state_cmd)
+	--
+	-- if Util.tablelength(tbl_opened_panes) == 0 then
+	-- 	local pane_id = tostring(Constant.get_sendID())
+	-- 	local pane_num = tostring(Constant.get_sendID())
+	-- 	local open_pane
+	-- 	Constant.set_insert_tbl_opened_panes(pane_id, pane_num, open_pane, state_cmd, opts.command, opts.regex)
+	-- 	M.send_runfile(opts)
+	-- else
+	-- 	if term_ops ~= nil then
+	-- 		local cmd_string
+	-- 		if opts.include_cwd then
+	-- 			local cwd = vim.fn.expand("%:p:h")
+	-- 			local fname = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(0), ":t")
+	-- 			cmd_string = opts.command .. " " .. cwd .. "/" .. fname
+	-- 		else
+	-- 			cmd_string = opts.command
+	-- 		end
+	-- 		-- print(cmd_string)
+	-- 		ToggletermUtil.close_toggleterm()
+	-- 		toggleterm.exec(cmd_string, tonumber(Constant.get_sendID()))
+	-- 	end
+	-- end
+
 	local cmd_string = vim.split(opts.command, " ")
 	if opts.include_cwd then
 		local cwd = vim.fn.expand("%:p:h")

@@ -120,7 +120,7 @@ function M.create_finder()
 
 		table.sort(terms, sort_funcs[sort_field])
 
-		for i, term in ipairs(terms) do
+		for _, term in ipairs(terms) do
 			print(term.id)
 		end
 	end
@@ -157,6 +157,7 @@ end
 function M.get_term_all()
 	return toggleterm.get_all()
 end
+
 function M.create_finder_files()
 	return "fd -d 1 -e json"
 end

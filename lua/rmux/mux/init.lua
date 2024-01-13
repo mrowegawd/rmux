@@ -141,6 +141,24 @@ function M.send_runfile(opts, state_cmd)
 		local fname = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(0), ":t")
 
 		if term_ops ~= nil then
+			-- Jika term_ops.pane_id dari table `Config.settings.base.tbl_opened_panes`
+			-- yang berdasarkan `state_cmd` tidak exists, maka akan men-update table nya
+			if not MuxUtil.pane_exists(term_ops.pane_id) then
+				local pane_id = Constant.get_sendID()
+				if not MuxUtil.pane_exists(pane_id) then
+					Constant.set_sendID(MuxUtil.get_pane_id(MuxUtil.get_last_active_pane()))
+					M.send_runfile(opts, state_cmd)
+				end
+
+				---@diagnostic disable-next-line: unused-local
+				Constant.update_tbl_opened_panes(function(idx, pane)
+					if pane.state_cmd == state_cmd then
+						term_ops.pane_id = pane_id
+						M.send_runfile(opts, state_cmd)
+					end
+				end)
+			end
+
 			local tmux_sendcmd = tmux_send .. term_ops.pane_id
 			cmd_nvim = tmux_sendcmd .. " '" .. term_ops.command .. "'" .. " Enter"
 			tmux_sendcmd = tmux_send .. term_ops.pane_id
