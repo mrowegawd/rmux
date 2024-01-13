@@ -15,7 +15,7 @@ local function __respawn_pane()
 		local cur_pane_id = MuxUtil.get_current_pane_id()
 		local win_width = vim.api.nvim_get_option("columns")
 
-		local w = math.floor((win_width * 0.2) + 5)
+		local w = math.floor((win_width * 0.2) + 1)
 		if w < 30 then
 			w = 40
 		end
