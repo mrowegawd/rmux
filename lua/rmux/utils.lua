@@ -1,5 +1,4 @@
 local M = {}
-local buf, win
 
 --  ╭──────────────────────────────────────────────────────────╮
 --  │                         GENERALS                         │
@@ -70,45 +69,13 @@ function M.tablelength(T)
 	return count
 end
 
-local function create_win()
-	vim.api.nvim_command("botright vnew")
-	win = vim.api.nvim_get_current_win()
-	buf = vim.api.nvim_get_current_buf()
-
-	vim.api.nvim_buf_set_name(0, "result #" .. buf)
-
-	vim.api.nvim_buf_set_option(0, "buftype", "nofile")
-	vim.api.nvim_buf_set_option(0, "swapfile", false)
-	-- vim.api.nvim_buf_set_option(0, "filetype", filetype)
-	vim.api.nvim_buf_set_option(0, "bufhidden", "wipe")
-
-	vim.api.nvim_command("setlocal wrap")
-	-- vim.api.nvim_command("setlocal cursorline")
-end
-local function on_stdout(_, data)
-	if data then
-		for _, line in ipairs(data) do
-			if line ~= "" then
-				vim.api.nvim_buf_set_lines(buf, -1, -1, false, { line })
-			end
-		end
-	end
-end
-
-function M.run_script_async(command)
-	if win and vim.api.nvim_win_is_valid(win) then
-		vim.api.nvim_win_close(win, true)
-	end
-	create_win()
-
+function M.run_jobstart(command, on_stdout)
 	vim.fn.jobstart(command, {
 		on_stdout = on_stdout,
 		on_stderr = on_stdout,
 		stdout_buffered = false,
 		stderr_buffered = false,
 	})
-
-	vim.cmd([[wincmd p]])
 end
 
 --  ╭──────────────────────────────────────────────────────────╮
