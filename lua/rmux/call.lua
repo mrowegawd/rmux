@@ -12,7 +12,7 @@ local function _auto_kill()
 			pattern = "*",
 			group = augroup,
 			callback = function()
-				require("rmux." .. Config.settings.base.run_with).close_all_task_panes()
+				require("rmux." .. Config.settings.base.run_with).close_all_panes()
 			end,
 		})
 	end

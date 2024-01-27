@@ -96,10 +96,6 @@ function M.send_interrupt(send_all)
 	end
 end
 
-function M.close_all_task_panes()
-	__close_all()
-end
-
 function M.close_all_panes()
 	current_pane_id = MuxUtil.get_current_pane_id()
 
@@ -166,6 +162,10 @@ function M.send_runfile(opts, state_cmd)
 			if opts.include_cwd then
 				cmd_nvim = tmux_sendcmd .. " '" .. term_ops.command .. " " .. cwd .. "/" .. fname .. "'" .. " Enter"
 			end
+
+			-- clear the screen pane
+			vim.fn.system(tmux_sendcmd .. " '" .. MuxUtil.sendClearScreen() .. "' Enter ")
+
 			vim.fn.system(cmd_nvim)
 		else
 			local tot_panes = MuxUtil.get_total_active_panes()
@@ -322,10 +322,9 @@ function M.send_multi(state_cmd)
 end
 
 function M.grep_string_pane()
-	__respawn_pane()
-
-	if #Config.settings.base.tbl_opened_panes == 0 then
-		return print("No active")
+	if Constant.get_sendID() == "" then
+		Util.warn({ msg = "pane not active, abort", setnotif = true })
+		return
 	end
 
 	local target_pane_num = MuxUtil.get_pane_num(Config.settings.sendID)

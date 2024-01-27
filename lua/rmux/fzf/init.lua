@@ -72,7 +72,7 @@ end
 function M.grep_err(opts, pane_num)
 	local Term = require("rmux." .. Config.settings.base.run_with .. ".util")
 	opts = opts or {}
-	local titleMsg = "Output error pane [" .. pane_num .. "]"
+	local titleMsg = "Select errors [" .. pane_num .. "]"
 
 	local path_cwd
 	if #Config.settings.base.rmuxpath > 0 then
@@ -85,10 +85,10 @@ function M.grep_err(opts, pane_num)
 
 	fzfopts.winopts.title = format_title(titleMsg:gsub("^%l", string.upper), "", "Boolean")
 	fzfopts.actions = vim.tbl_extend("keep", {}, Fzfmap_grepper.enter())
-	fzfopts.fzf_opts = {
-		["--header"] = [[default:'go-to-file']],
-		["--no-sort"] = "",
-	}
+	-- fzfopts.fzf_opts = {
+	-- 	["--header"] = [[default:'go-to-file']],
+	-- 	["--no-sort"] = "",
+	-- }
 	fzfopts.sort = true
 	fzfopts.winopts.preview = { hidden = "hidden" }
 	fzfopts.winopts_fn = function()
