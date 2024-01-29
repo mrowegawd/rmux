@@ -166,4 +166,20 @@ function M.create_finder_err(output)
 	return Util.rm_duplicates_tbl(output)
 end
 
+function M.get_pane_num(get_sendID)
+	return vim.api.nvim_win_get_buf(tonumber(get_sendID))
+end
+
+function M.pane_capture(target_pane_num, grep_cmd)
+	local contents = vim.api.nvim_buf_get_lines(target_pane_num, 0, vim.api.nvim_buf_line_count(0), false)
+
+	local grep_contents = {}
+	for _, content in pairs(contents) do
+		if string.match(content, grep_cmd, 1) then
+			table.insert(grep_contents, content)
+		end
+	end
+	return grep_contents
+end
+
 return M

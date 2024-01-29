@@ -2,6 +2,8 @@ local Util = require("rmux.utils")
 
 local M = {}
 local buf, win
+local filetype = "rmux_output"
+local Constant = require("rmux.constant")
 
 function M.create_win()
 	vim.api.nvim_command("botright vnew")
@@ -12,11 +14,12 @@ function M.create_win()
 
 	vim.api.nvim_buf_set_option(0, "buftype", "nofile")
 	vim.api.nvim_buf_set_option(0, "swapfile", false)
-	-- vim.api.nvim_buf_set_option(0, "filetype", filetype)
+	vim.api.nvim_buf_set_option(0, "filetype", filetype)
 	vim.api.nvim_buf_set_option(0, "bufhidden", "wipe")
 
 	vim.api.nvim_command("setlocal nowrap")
 	-- vim.api.nvim_command("setlocal cursorline")
+	Constant.set_sendID(win)
 end
 local function on_stdout(_, data)
 	if data then

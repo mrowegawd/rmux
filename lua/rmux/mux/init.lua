@@ -331,21 +331,9 @@ function M.grep_string_pane()
 	local target_pane_id = Config.settings.sendID
 
 	local pane_target
-	for _, panes in pairs(Config.settings.base.tbl_opened_panes) do
+	for _, panes in pairs(Constant.get_tbl_opened_panes()) do
 		if panes.pane_id == target_pane_id then
-			-- print(panes.pane_id)
 			pane_target = panes
-			-- if found_pane_id == nil then
-			-- if #panes.regex == 0 then
-			-- if panes.state_cmd == Config.settings.provider_cmd.RUN_FILE then
-			-- 	found_pane_id = true
-			-- 	pane_regex = panes.regex
-			-- end
-			-- else
-			-- 	found_pane_id = true
-			-- 	pane_regex = panes.regex
-			-- end
-			-- end
 		end
 	end
 

@@ -84,7 +84,7 @@ function M.grep_err(opts, pane_num)
 	end
 
 	fzfopts.winopts.title = format_title(titleMsg:gsub("^%l", string.upper), "", "Boolean")
-	fzfopts.actions = vim.tbl_extend("keep", {}, Fzfmap_grepper.enter())
+	fzfopts.actions = vim.tbl_extend("keep", {}, Fzfmap_grepper.enter(), Fzfmap_grepper.send_qf())
 	-- fzfopts.fzf_opts = {
 	-- 	["--header"] = [[default:'go-to-file']],
 	-- 	["--no-sort"] = "",

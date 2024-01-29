@@ -10,6 +10,8 @@ local Ui = require("rmux.ui")
 
 local toggleterm = require("toggleterm")
 local ToggletermUtil = require("rmux.toggleterm.util")
+local Fzf = require("rmux.fzf")
+
 local M = {}
 
 local current_win_id, current_cur_id
@@ -45,6 +47,12 @@ function M.send_runfile(opts)
 		cmd_string = vim.split(opts.command .. " " .. cwd .. "/" .. fname, " ")
 	end
 	Ui.run_cmd_async(cmd_string)
+
+	local pane_id = tostring(Constant.get_sendID())
+	local pane_num = ToggletermUtil.get_pane_num(Constant.get_sendID())
+	local open_pane
+
+	Constant.set_insert_tbl_opened_panes(pane_id, pane_num, open_pane, state_cmd, opts.command, opts.regex)
 end
 
 function M.send_interrupt()
@@ -148,6 +156,38 @@ function M.send_multi(state_cmd)
 	-- if #Constant.get_sendID() == "" then
 	-- 	Constant.set_sendID(MuxUtil.get_pane_id(MuxUtil.get_total_active_panes()))
 	-- end
+end
+
+function M.grep_string_pane()
+	if Constant.get_sendID() == "" then
+		Util.warn({
+			msg = "pane or buffer is, are not active, abort it",
+			setnotif = true,
+		})
+		return
+	end
+
+	local target_pane_num = ToggletermUtil.get_pane_num(Config.settings.sendID)
+	local target_pane_id = Config.settings.sendID
+
+	if target_pane_num and vim.api.nvim_win_is_valid(target_pane_id) then
+		local pane_target
+		for _, panes in pairs(Constant.get_tbl_opened_panes()) do
+			if panes.pane_id == tostring(target_pane_id) then
+				pane_target = panes
+			end
+		end
+
+		if pane_target then
+			vim.schedule(function()
+				local grep_output = ToggletermUtil.pane_capture(target_pane_num, pane_target.regex)
+
+				if #grep_output > 0 then
+					Fzf.grep_err(grep_output, ToggletermUtil.get_pane_num(pane_target.pane_id))
+				end
+			end)
+		end
+	end
 end
 
 return M

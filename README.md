@@ -1,6 +1,7 @@
 # RMux
 
-Add the following file configuration `.rmuxrc.json`, example:
+Add the following file configuration: `.rmuxrc.json`
+for example:
 
 ```json
 {
