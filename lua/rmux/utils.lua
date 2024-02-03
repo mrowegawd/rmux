@@ -78,6 +78,17 @@ function M.run_jobstart(command, on_stdout)
 	})
 end
 
+function M.normalize_return(str)
+	---@diagnostic disable-next-line: redefined-local
+	local str_slice = string.gsub(str, "\n", "")
+	local res = vim.split(str_slice, "\n")
+	if res[1] then
+		return res[1]
+	end
+
+	return str_slice
+end
+
 --  ╭──────────────────────────────────────────────────────────╮
 --  │                        FILE UTILS                        │
 --  ╰──────────────────────────────────────────────────────────╯
@@ -94,9 +105,15 @@ end
 function M.is_file(filename)
 	return M.exists(filename) == "file"
 end
+function M.jsonEncode(tbl)
+	return vim.fn.json_encode(tbl)
+end
+function M.jsonDecode(tbl)
+	return vim.fn.json_decode(tbl)
+end
 
 function M.read_json_file(tbl)
-	return vim.fn.json_decode(vim.fn.readfile(tbl))
+	return M.jsonDecode(vim.fn.readfile(tbl))
 end
 
 function M.write_to_file(tbl, path_fname)

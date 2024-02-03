@@ -48,14 +48,14 @@ function M.set_sendID(send_pane)
 	if Config.settings.base.run_with == "mux" then
 		assert(
 			type(send_pane) == "string",
-			"Config.settings.base.sendID=" .. send_pane .. " but sendID must be a string of number ex: %1, %2"
+			"Config.settings.base.sendID=" .. send_pane .. " but 'send_pane must be type of string"
 		)
 		local persent, _ = string.find(send_pane, [[%%]])
-		assert(persent == 1, "Config.settings.base.sendID=" .. send_pane .. " but sendID must have a prefix with %")
+		assert(persent == 1, "Config.settings.base.sendID=" .. send_pane .. " but 'sendID' must have prefix with %")
 	else
 		assert(
 			type(send_pane) == "number",
-			"Config.settings.base.sendID=" .. send_pane .. " but sendID must a number of string ex: 1, 2"
+			"Config.settings.base.sendID=" .. send_pane .. " but 'send_pane' must be type of number"
 		)
 	end
 

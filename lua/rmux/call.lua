@@ -28,14 +28,12 @@ end
 
 local function _run_grep_err()
 	require("rmux." .. Config.settings.base.run_with).grep_string_pane(Config.settings.sendID)
-
 	_auto_kill()
 end
 
 local function _run_file()
 	local state_cmd = Config.settings.provider_cmd.RUN_FILE
 	require("rmux." .. Config.settings.base.run_with).send_runfile(Config.settings.langs.run_file, state_cmd)
-
 	_auto_kill()
 end
 
@@ -124,13 +122,19 @@ end
 
 function M.command(opts, state_cmd)
 	assert(
-		vim.tbl_contains({ "mux", "tt", "toggleterm" }, Config.settings.base.run_with),
-		"run_with must be a 'mux' or 'tt' "
+		vim.tbl_contains(Config.settings.run_support_with, Config.settings.base.run_with),
+		"supported commands (`run_with`): " .. table.concat(Config.settings.run_support_with, ", ")
 	)
 
 	if Config.settings.base.run_with == "mux" then
 		if not os.getenv("TMUX") then
 			Config.settings.base.run_with = "toggleterm"
+		end
+	end
+
+	if Config.settings.base.run_with == "wez" then
+		if os.getenv("TMUX") then
+			Config.settings.base.run_with = "mux"
 		end
 	end
 

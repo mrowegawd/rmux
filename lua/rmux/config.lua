@@ -6,7 +6,7 @@ local default_settings = {
 		setnotif = true,
 		auto_run_tasks = true,
 		tbl_opened_panes = {},
-		run_with = "mux", -- tmux, tt, toggleterm (tt.nvim)
+		run_with = "mux", -- tmux, wez, tt, toggleterm (tt.nvim)
 		auto_kill = true,
 		rmuxpath = vim.fn.expand("~/.config/nvim/runmux"),
 	},
@@ -26,6 +26,7 @@ function M.update_settings(opts)
 	M.settings = merge_settings(default_settings, opts)
 
 	M.settings.prefix_title = "RMUX"
+	M.settings.run_support_with = { "mux", "tt", "toggleterm", "wez" }
 	M.settings.sendID = ""
 	M.settings.provider_cmd = {
 		RUN_FILE = "run_file",

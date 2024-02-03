@@ -19,8 +19,9 @@ local function __respawn_pane()
 		if w < 30 then
 			w = 40
 		end
+
 		vim.fn.system(string.format("tmux split-window -h -p %s", w))
-		M.back_to_pane(cur_pane_id)
+		MuxUtil.back_to_pane(cur_pane_id)
 
 		Constant.set_sendID(tostring(MuxUtil.get_id_next_pane()))
 	end
@@ -33,19 +34,12 @@ local function __close_all()
 	end
 
 	if total_panes > 1 then
-		for i = 1, total_panes do
-			local pane_id = MuxUtil.get_pane_id(i)
-			if current_pane_id ~= pane_id then
-				vim.schedule(function()
-					MuxUtil.kill_pane(pane_id)
-				end)
-			end
+		for _, pane in pairs(Constant.get_tbl_opened_panes()) do
+			vim.schedule(function()
+				MuxUtil.kill_pane(pane.pane_id)
+			end)
 		end
 	end
-end
-
-function M.back_to_pane(cur_pane_id)
-	vim.fn.system("tmux select-pane -t " .. cur_pane_id)
 end
 
 function M.send(cmd, num_pane, isSendLine)
@@ -102,24 +96,19 @@ function M.close_all_panes()
 	__close_all()
 
 	Config.settings.base.tbl_opened_panes = {}
-	M.back_to_pane(current_pane_id)
+	MuxUtil.back_to_pane(current_pane_id)
 end
 
 function M.send_runfile(opts, state_cmd)
 	-- `true` paksa spawn 1 pane, jika terdapat hanya satu pane saja yang active
 	__respawn_pane()
 
-	-- current_pane_id = MuxUtil.get_current_pane_id()
-	-- if MuxUtil.pane_iszoom() then
-	-- 	MuxUtil.pane_toggle_zoom()
-	-- end
-
 	-- Check if `pane_target.pane_id` is not exists, we must update the `pane_target.pane_id`
 	local tbl_opened_panes = Constant.get_tbl_opened_panes()
-	local term_ops = Constant.find_state_cmd_on_tbl_opened_panes(state_cmd)
+	local pane_id = Constant.get_sendID()
+	current_pane_id = pane_id
 
 	if Util.tablelength(tbl_opened_panes) == 0 then
-		local pane_id = Constant.get_sendID()
 		if #pane_id > 0 then
 			local pane_num = MuxUtil.get_pane_num(Constant.get_sendID())
 			if MuxUtil.pane_exists(pane_id) then
@@ -136,11 +125,11 @@ function M.send_runfile(opts, state_cmd)
 		local cwd = vim.fn.expand("%:p:h")
 		local fname = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(0), ":t")
 
-		if term_ops ~= nil then
+		local run_pane_tbl = Constant.find_state_cmd_on_tbl_opened_panes(state_cmd)
+		if run_pane_tbl ~= nil then
 			-- Jika term_ops.pane_id dari table `Config.settings.base.tbl_opened_panes`
 			-- yang berdasarkan `state_cmd` tidak exists, maka akan men-update table nya
-			if not MuxUtil.pane_exists(term_ops.pane_id) then
-				local pane_id = Constant.get_sendID()
+			if not MuxUtil.pane_exists(run_pane_tbl.pane_id) then
 				if not MuxUtil.pane_exists(pane_id) then
 					Constant.set_sendID(MuxUtil.get_pane_id(MuxUtil.get_last_active_pane()))
 					M.send_runfile(opts, state_cmd)
@@ -149,18 +138,17 @@ function M.send_runfile(opts, state_cmd)
 				---@diagnostic disable-next-line: unused-local
 				Constant.update_tbl_opened_panes(function(idx, pane)
 					if pane.state_cmd == state_cmd then
-						term_ops.pane_id = pane_id
-						M.send_runfile(opts, state_cmd)
+						run_pane_tbl.pane_id = pane_id
 					end
 				end)
 			end
 
-			local tmux_sendcmd = tmux_send .. term_ops.pane_id
-			cmd_nvim = tmux_sendcmd .. " '" .. term_ops.command .. "'" .. " Enter"
-			tmux_sendcmd = tmux_send .. term_ops.pane_id
+			local tmux_sendcmd = tmux_send .. run_pane_tbl.pane_id
+			cmd_nvim = tmux_sendcmd .. " '" .. run_pane_tbl.command .. "'" .. " Enter"
+			tmux_sendcmd = tmux_send .. run_pane_tbl.pane_id
 
 			if opts.include_cwd then
-				cmd_nvim = tmux_sendcmd .. " '" .. term_ops.command .. " " .. cwd .. "/" .. fname .. "'" .. " Enter"
+				cmd_nvim = tmux_sendcmd .. " '" .. run_pane_tbl.command .. " " .. cwd .. "/" .. fname .. "'" .. " Enter"
 			end
 
 			-- clear the screen pane
@@ -170,7 +158,6 @@ function M.send_runfile(opts, state_cmd)
 		else
 			local tot_panes = MuxUtil.get_total_active_panes()
 			Constant.set_sendID(MuxUtil.get_pane_id(tot_panes))
-			local pane_id = Constant.get_sendID()
 			local pane_num = MuxUtil.get_pane_num(Constant.get_sendID())
 			local open_pane
 			Constant.set_insert_tbl_opened_panes(pane_id, pane_num, open_pane, state_cmd, opts.command, opts.regex)
@@ -284,7 +271,7 @@ function M.open_multi_panes(layouts, state_cmd)
 			local layouts_idx = layouts[idx]
 			-- `pane_id` is the command for create, open dan get the id of pane nya langsung
 			local pane_id =
-				MuxUtil.normalize_return(vim.fn.system(layout.open_pane .. '\\; display-message -p "#{pane_id}"'))
+				Util.normalize_return(vim.fn.system(layout.open_pane .. '\\; display-message -p "#{pane_id}"'))
 			local pane_num = MuxUtil.get_pane_num(pane_id)
 
 			Constant.set_insert_tbl_opened_panes(
@@ -305,14 +292,14 @@ function M.open_multi_panes(layouts, state_cmd)
 end
 
 function M.back_to_pane_one()
-	M.back_to_pane(current_pane_id)
+	MuxUtil.back_to_pane(current_pane_id)
 end
 
 function M.send_multi(state_cmd)
-	for _, panes in pairs(Constant.get_tbl_opened_panes()) do
-		if panes.state_cmd == state_cmd then
-			-- vim.fn.system(tmux_send .. panes.pane_id .. " '" .. panes.command .. "' " .. "Enter \\; last-pane")
-			vim.fn.system(tmux_send .. panes.pane_id .. " '" .. panes.command .. "' " .. "Enter")
+	for _, pane in pairs(Constant.get_tbl_opened_panes()) do
+		if pane.state_cmd == state_cmd then
+			-- vim.fn.system(tmux_send .. pane.pane_id .. " '" .. pane.command .. "' " .. "Enter \\; last-pane")
+			vim.fn.system(tmux_send .. pane.pane_id .. " '" .. pane.command .. "' " .. "Enter")
 		end
 	end
 
