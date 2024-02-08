@@ -78,6 +78,14 @@ function M.get_last_active_pane()
 	return list_json_tbl[#list_json_tbl].pane_id
 end
 
+function M.get_right_active_pane()
+	local pane_right = Util.normalize_return(vim.fn.system("wezterm cli get-pane-direction right"))
+	if #pane_right == 0 then
+		return nil, false
+	end
+	return pane_right, true
+end
+
 function M.pane_exists(pane_id)
 	for _, x in pairs(__list_panes()) do
 		if x.pane_id == pane_id then
@@ -91,8 +99,24 @@ function M.kill_pane(pane_id)
 	vim.fn.system("wezterm cli kill-pane --pane-id " .. pane_id)
 end
 
+function M.pane_iszoom()
+	-- TODO: check zoom atau tidak, bisa dilihat di `wezterm cli list --format json`
+	return Util.normalize_return(vim.fn.system([[tmux display-message -p "#F"]])) == "*Z"
+end
+function M.pane_toggle_zoom()
+	return Util.normalize_return(vim.fn.system([[wezterm cli zoom-pane]]))
+end
+
 function M.sendEnter(pane_id)
 	vim.fn.system("wezterm cli send-text --no-paste $'\r' --pane-id " .. pane_id)
+end
+
+function M.pane_capture(pane_num, grep_cmd)
+	local cmd = [[!wezterm cli get-text --pane-id ]] .. pane_num .. " | sort -r | grep -oiE '" .. grep_cmd .. "' | tac"
+	return vim.api.nvim_exec2(cmd, { output = true })
+end
+function M.create_finder_err(output)
+	return Util.rm_duplicates_tbl(output)
 end
 
 return M

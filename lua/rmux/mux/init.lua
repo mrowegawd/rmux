@@ -11,6 +11,8 @@ local tmux_send = "tmux send -t "
 local current_pane_id
 
 local function __respawn_pane()
+	MuxUtil.get_right_active_pane()
+
 	if MuxUtil.get_total_active_panes() == 1 then
 		local cur_pane_id = MuxUtil.get_current_pane_id()
 		local win_width = vim.api.nvim_get_option("columns")

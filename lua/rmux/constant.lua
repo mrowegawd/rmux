@@ -55,7 +55,7 @@ function M.set_sendID(send_pane)
 	else
 		assert(
 			type(send_pane) == "number",
-			"Config.settings.base.sendID=" .. send_pane .. " but 'send_pane' must be type of number"
+			"Config.settings.base.sendID=" .. tostring(send_pane) .. " but 'send_pane' must be type of number"
 		)
 	end
 
