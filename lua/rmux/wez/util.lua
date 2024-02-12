@@ -110,6 +110,9 @@ end
 function M.sendEnter(pane_id)
 	vim.fn.system("wezterm cli send-text --no-paste $'\r' --pane-id " .. pane_id)
 end
+function M.create_finder_files()
+	return "fd -d 1 -e json"
+end
 
 function M.pane_capture(pane_num, grep_cmd)
 	local cmd = [[!wezterm cli get-text --pane-id ]] .. pane_num .. " | sort -r | grep -oiE '" .. grep_cmd .. "' | tac"

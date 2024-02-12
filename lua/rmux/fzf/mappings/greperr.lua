@@ -12,6 +12,13 @@ function M.enter()
 			local row = tonumber(fname[2])
 			local col = tonumber(fname[3])
 
+			if col == nil then
+				col = 0
+			end
+			if row == nil then
+				row = 1
+			end
+
 			vim.cmd("e " .. fname[1])
 			vim.api.nvim_win_set_cursor(0, { row, col })
 		end,

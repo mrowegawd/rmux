@@ -67,16 +67,15 @@ function M.send_runfile(opts, state_cmd)
 	local run_pane_tbl = Constant.find_state_cmd_on_tbl_opened_panes(state_cmd)
 
 	if run_pane_tbl then
-		-- Jika term_ops.pane_id dari table `Config.settings.base.tbl_opened_panes`
-		-- yang berdasarkan `state_cmd` tidak exists, maka akan men-update table nya
-		-- print()
-		if not WezUtil.pane_exists(run_pane_tbl.pane_id) then
+		-- Update tbl if regex or pane_id is not exists
+		if not WezUtil.pane_exists(run_pane_tbl.pane_id) or run_pane_tbl.regex ~= opts.regex then
 			local pane_idc = tonumber(Constant.get_sendID())
 
 			---@diagnostic disable-next-line: unused-local
 			Constant.update_tbl_opened_panes(function(idx, pane)
 				if pane.state_cmd == state_cmd then
 					run_pane_tbl.pane_id = pane_idc
+					run_pane_tbl.regex = opts.regex
 				end
 			end)
 			return M.send_runfile(opts, state_cmd)

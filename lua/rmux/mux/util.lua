@@ -29,6 +29,12 @@ function M.get_pane_num(pane_id)
 	return Util.normalize_return(vim.fn.system("tmux display-message -t " .. pane_id .. " -p '#{pane_index}'"))
 end
 
+function M.get_pane_current_command(pane_id)
+	return Util.normalize_return(
+		vim.fn.system("tmux display-message -t " .. pane_id .. " -p '#{pane_current_command}'")
+	)
+end
+
 function M.get_total_active_panes()
 	return tonumber(Util.normalize_return(vim.fn.system("tmux display-message -p '#{window_panes}'")))
 end
@@ -106,6 +112,20 @@ end
 
 function M.back_to_pane(cur_pane_id)
 	vim.fn.system("tmux select-pane -t " .. cur_pane_id)
+end
+
+function M.get_right_active_pane()
+	print(M.get_total_active_panes())
+end
+
+function M.go_right_pane()
+	vim.fn.system("tmux select-pane -R")
+end
+function M.go_left_pane()
+	vim.fn.system("tmux select-pane -L")
+end
+function M.go_last_pane()
+	vim.fn.system("tmux last-pane")
 end
 
 return M
