@@ -14,8 +14,8 @@ local function _width_pane()
 	local win_width = vim.api.nvim_get_option("columns")
 
 	local w = math.floor((win_width * 0.1) - 5)
-	if w < 30 then
-		return 25
+	if w < 40 then
+		return 55
 	end
 	return w
 end
@@ -27,7 +27,9 @@ local function __respawn_pane()
 	if (#pane_id == 0 or not MuxUtil.pane_exists(pane_id)) and total_panes == 1 then
 		local cur_pane_id = MuxUtil.get_current_pane_id()
 
-		vim.fn.system(string.format("tmux split-window -h -p %s", _width_pane()))
+		vim.fn.system(
+			string.format("tmux split-window -h -p %s -l %s -c '#{pane_current_path}'", _width_pane(), _width_pane())
+		)
 		MuxUtil.back_to_pane(cur_pane_id)
 
 		Constant.set_sendID(tostring(MuxUtil.get_id_next_pane()))
@@ -42,7 +44,13 @@ local function __respawn_pane()
 
 		if MuxUtil.get_pane_current_command(the_second_pane) == "nnn" then
 			MuxUtil.go_left_pane()
-			vim.fn.system(string.format("tmux split-window -h -p %s", _width_pane()))
+			vim.fn.system(
+				string.format(
+					"tmux split-window -h -p %s -l %s -c '#{pane_current_path}'",
+					_width_pane(),
+					_width_pane()
+				)
+			)
 			local the_third_pane = MuxUtil.get_current_pane_id()
 			Constant.set_sendID(tostring(MuxUtil.get_pane_id(the_third_pane)))
 			MuxUtil.go_last_pane()
