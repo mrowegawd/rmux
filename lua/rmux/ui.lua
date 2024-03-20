@@ -12,10 +12,10 @@ function M.create_win()
 
 	vim.api.nvim_buf_set_name(0, "result #" .. buf)
 
-	vim.api.nvim_buf_set_option(0, "buftype", "nofile")
-	vim.api.nvim_buf_set_option(0, "swapfile", false)
-	vim.api.nvim_buf_set_option(0, "filetype", filetype)
-	vim.api.nvim_buf_set_option(0, "bufhidden", "wipe")
+	vim.api.nvim_set_option_value("buftype", "nofile", { buf = 0 })
+	vim.api.nvim_set_option_value("swapfile", false, { buf = 0 })
+	vim.api.nvim_set_option_value("filetype", filetype, { buf = 0 })
+	vim.api.nvim_set_option_value("bufhidden", "wipe", { buf = 0 })
 
 	vim.api.nvim_command("setlocal nowrap")
 	-- vim.api.nvim_command("setlocal cursorline")

@@ -11,7 +11,7 @@ local tmux_send = "tmux send -t "
 local current_pane_id
 
 local function _width_pane()
-	local win_width = vim.api.nvim_get_option("columns")
+	local win_width = vim.api.nvim_get_option_value("lines", {})
 
 	local w = math.floor((win_width * 0.1) - 5)
 	if w < 40 then

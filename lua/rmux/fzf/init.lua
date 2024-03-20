@@ -92,10 +92,10 @@ function M.grep_err(opts, pane_num)
 	fzfopts.sort = true
 	fzfopts.winopts.preview = { hidden = "hidden" }
 	fzfopts.winopts_fn = function()
-		local win_height = math.ceil(vim.api.nvim_get_option("lines") * 0.5)
-		local win_width = math.ceil(vim.api.nvim_get_option("columns") * 1)
-		local col = math.ceil((vim.api.nvim_get_option("columns") - win_width) * 1)
-		local row = math.ceil((vim.api.nvim_get_option("lines") - win_height) * 1 - 3)
+		local win_height = math.ceil(vim.api.nvim_get_option_value("lines", {}) * 0.5)
+		local win_width = math.ceil(vim.api.nvim_get_option_value("columns", {}) * 1)
+		local col = math.ceil((vim.api.nvim_get_option_value("columns", {}) - win_width) * 1)
+		local row = math.ceil((vim.api.nvim_get_option_value("lines", {}) - win_height) * 1 - 3)
 		return {
 			width = win_width,
 			height = win_height,
