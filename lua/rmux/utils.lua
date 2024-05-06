@@ -126,9 +126,9 @@ end
 --  ╰──────────────────────────────────────────────────────────╯
 
 function M.warn(opts)
-	if type(opts) ~= "table" then
-		print("type must be a table")
-	end
+	vim.validate({
+		opts = { opts, "table" },
+	})
 
 	local notif = opts.setnotif or false
 	if notif then
@@ -137,9 +137,9 @@ function M.warn(opts)
 end
 
 function M.error(opts)
-	if type(opts) ~= "table" then
-		print("type must be a table")
-	end
+	vim.validate({
+		opts = { opts, "table" },
+	})
 
 	local notif = opts.setnotif or false
 	if notif then
@@ -148,9 +148,9 @@ function M.error(opts)
 end
 
 function M.info(opts)
-	if type(opts) ~= "table" then
-		print("type must be a table")
-	end
+	vim.validate({
+		opts = { opts, "table" },
+	})
 
 	local notif = opts.setnotif or false
 	if notif then

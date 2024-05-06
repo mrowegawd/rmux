@@ -9,8 +9,8 @@ local Util = require("rmux.utils")
 local Ui = require("rmux.ui")
 
 local toggleterm = require("toggleterm")
-local ToggletermUtil = require("rmux.toggleterm.util")
-local Fzf = require("rmux.fzf")
+local ToggletermUtil = require("rmux.integrations.toggleterm.util")
+local Fzf = require("rmux.picker.fzf")
 
 local M = {}
 

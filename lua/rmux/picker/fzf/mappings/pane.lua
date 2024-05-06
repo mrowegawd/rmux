@@ -1,4 +1,4 @@
-local FzfMapUtil = require("rmux.fzf.mappings.util")
+local FzfMapUtil = require("rmux.picker.fzf.mappings.util")
 
 local Config = require("rmux.config")
 local Util = require("rmux.utils")

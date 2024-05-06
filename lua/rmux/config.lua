@@ -30,18 +30,13 @@ function M.update_settings(opts)
 	M.settings.sendID = ""
 	M.settings.provider_cmd = {
 		RUN_FILE = "run_file",
-		RUN_TASKS_ALL = "run_tasks_all",
-		RUN_OPENREPL = "run_openrepl",
+		RUN_KILL_ALL_PANES = "kill_all_panes",
 
-		RUN_SENDID = "run_sendid",
-		RUN_VSENDID = "run_vsendid",
-
-		RUN_NONTMUX = "run_non_tmux",
+		RUN_SENDID = "run_sendline",
+		RUN_VSENDID = "run_vsendline",
 
 		RUN_INTERRUPT = "interrupt_single", -- default nya harus false, jangan diubah menjadi true
 		RUN_INTERRUPT_ALL = "interrupt_all",
-
-		RUN_KILL_ALL_PANES = "kill_all_panes",
 
 		RUN_GRAB_ERR = "run_grep_err",
 	}

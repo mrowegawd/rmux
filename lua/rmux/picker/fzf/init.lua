@@ -5,9 +5,10 @@ end
 
 local Config = require("rmux.config")
 
-local FzfMapPane = require("rmux.fzf.mappings.pane")
-local FzfMapTarget = require("rmux.fzf.mappings.target")
-local Fzfmap_grepper = require("rmux.fzf.mappings.greperr")
+local FzfMapPane = require("rmux.picker.fzf.mappings.pane")
+local FzfMapSelect = require("rmux.picker.fzf.mappings.select")
+local FzfMapTarget = require("rmux.picker.fzf.mappings.target")
+local Fzfmap_grepper = require("rmux.picker.fzf.mappings.greperr")
 
 local M = {}
 
@@ -67,6 +68,24 @@ function M.select_rmuxfile()
 		return { width = 100, height = 25, row = 10, col = collss }
 	end
 	fzf.files(fzfopts)
+end
+
+function M.gen_select(tbl)
+	vim.validate({
+		tbl = { tbl, "table" },
+	})
+
+	fzfopts.actions = vim.tbl_extend("keep", FzfMapSelect.enter(), {})
+
+	fzfopts.winopts_fn = function()
+		-- local cols = 50
+		-- local collss = cols > 80 and cols / 2 - 25 or cols
+		return { width = 60, height = 25, row = 2 }
+	end
+
+	-- NOTE: gabungkan dengan built command seperti `watcher`,
+	-- pada `tbl`
+	fzf.fzf_exec(tbl, fzfopts)
 end
 
 function M.grep_err(opts, pane_num)

@@ -1,8 +1,10 @@
 local Constant = require("rmux.constant")
 local Util = require("rmux.utils")
-local WezUtil = require("rmux.wez.util")
 local Config = require("rmux.config")
-local Fzf = require("rmux.fzf")
+
+local WezUtil = require("rmux.integrations.wez.util")
+
+local Fzf = require("rmux.picker.fzf")
 
 local M = {}
 

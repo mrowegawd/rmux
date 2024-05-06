@@ -2,43 +2,47 @@ local Config = require("rmux.config")
 
 local M = {}
 
-function M.set_insert_tbl_opened_panes(pane_id, pane_num, open_pane, state_cmd, command, regex)
+function M.insert_tbl_langs(tbl_data_langs)
+	vim.validate({
+		tbl_data_langs = { tbl_data_langs, "table" },
+	})
+
+	-- if #tbl_data_langs == 0 then
+	-- 	Config.settings.langs = {}
+	-- end
+
+	for _, tasks in pairs(tbl_data_langs) do
+		table.insert(Config.settings.langs, tasks)
+	end
+end
+
+function M.set_insert_tbl_opened_panes(pane_id, pane_idx, name_cmd, builder, type_strategy)
 	vim.validate({
 		pane_id = { pane_id, "string", true },
-		open_num = { type(tonumber(pane_num)), "string", true },
-		open_pane = { open_pane, "string", true },
-		state_cmd = { state_cmd, "string", true },
-		command = { command, "string", true },
+		pane_idx = { pane_idx, "number", true },
+		name_cmd = { name_cmd, "string", true },
+		builder = { builder, "table", true },
+		type_strategy = { type_strategy, "string", true },
 		-- NOTE:
-		-- gimana cara nya membuat validate untuk 2 type (just like union)??
-		-- karena 'regex' ini, type nya adalah "string " | "table"
-		-- regex = { regex, "string", false },
+		-- gimana cara nya membuat validate untuk 2 type (just like union)
+		-- contoh nya, type 'name_cmde': "string " | "table"?
 	})
 	return table.insert(Config.settings.base.tbl_opened_panes, {
 		pane_id = pane_id,
-		pane_num = pane_num,
-		open_pane = open_pane,
-		state_cmd = state_cmd,
-		command = command,
-		regex = regex,
+		pane_idx = pane_idx,
+		name = name_cmd,
+		builder = builder,
+		type_strategy = type_strategy,
 	})
 end
 
 function M.get_tbl_opened_panes()
 	return Config.settings.base.tbl_opened_panes
-	-- local _tbl = {}
-	--
-	-- for _, panes in pairs(Config.settings.base.tbl_opened_panes) do
-	-- 	if panes.state_cmd == state_cmd then
-	-- 		_tbl = panes
-	-- 	end
-	-- end
-	-- return _tbl
 end
 
 function M.update_tbl_opened_panes(fn)
-	for idx, pane in pairs(Config.settings.base.tbl_opened_panes) do
-		fn(idx, pane)
+	for task_idx, tasks in pairs(Config.settings.base.tbl_opened_panes) do
+		fn(task_idx, tasks)
 	end
 end
 
@@ -64,6 +68,10 @@ end
 
 function M.get_sendID()
 	return Config.settings.sendID
+end
+
+function M.get_langs()
+	return Config.settings.langs
 end
 
 ---------------------
