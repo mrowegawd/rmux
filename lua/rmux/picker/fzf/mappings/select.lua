@@ -7,6 +7,10 @@ function M.enter()
 		["default"] = function(selected, _)
 			Integs:generator_cmd_panes(selected[1])
 		end,
+
+		-- ["alt-a"] = function()
+		-- 	Integs:run_all(tbl, "orchestrator")
+		-- end,
 	}
 end
 

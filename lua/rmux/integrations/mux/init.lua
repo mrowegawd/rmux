@@ -10,6 +10,10 @@ function M.pane_toggle_zoom()
 	return Util.normalize_return(vim.fn.system([[tmux resize-pane -Z]]))
 end
 
+function M.reset_resize_pane()
+	return Util.normalize_return(vim.fn.system([[tmux select-layout -E]]))
+end
+
 function M.pane_capture(pane_num, grep_cmd)
 	local cmd = [[!tmux capture-pane -pJS - -t ]] .. pane_num .. " | sort -r | grep -oiE '" .. grep_cmd .. "' | tac"
 	return vim.api.nvim_exec2(cmd, { output = true })

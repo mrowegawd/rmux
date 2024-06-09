@@ -1,14 +1,13 @@
-local FzfMapUtil = require("rmux.picker.fzf.mappings.util")
-
 local Config = require("rmux.config")
 local Util = require("rmux.utils")
+local FzfMapUtils = require("rmux.picker.fzf.utils")
 
 local M = {}
 
 function M.enter()
 	return {
 		["default"] = function(selected, _)
-			local pth = FzfMapUtil.__strip_str(selected[1])
+			local pth = FzfMapUtils.__strip_str(selected[1])
 			if pth == nil then
 				return
 			end
@@ -20,7 +19,7 @@ function M.enter()
 			vim.cmd("0")
 		end,
 		["ctrl-e"] = function(selected, _)
-			local pth = FzfMapUtil.__strip_str(selected[1])
+			local pth = FzfMapUtils.__strip_str(selected[1])
 			if pth == nil then
 				return
 			end
@@ -34,7 +33,7 @@ end
 function M.delete()
 	return {
 		["ctrl-x"] = function(selected, _)
-			local pth = FzfMapUtil.__strip_str(selected[1])
+			local pth = FzfMapUtils.__strip_str(selected[1])
 			if pth == nil then
 				return
 			end

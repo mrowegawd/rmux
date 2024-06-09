@@ -36,4 +36,17 @@ function M.__strip_str(selected)
 	return __stripBeforeLastOccurrenceOf(pth, nbsp)
 end
 
+local function get_option(name_opt)
+	return vim.api.nvim_get_option_value(name_opt, { scope = "local" })
+end
+
+function M.get_col_row()
+	local win_height = math.ceil(get_option("lines") - 150)
+	local win_width = math.ceil(get_option("columns") - 100)
+
+	local col = math.ceil((win_width / 2) * 1 + 20)
+	local row = math.ceil(((get_option("lines") - win_height) / 100) + 15)
+	return col, row
+end
+
 return M

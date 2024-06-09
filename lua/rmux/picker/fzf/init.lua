@@ -9,6 +9,7 @@ local FzfMapPane = require("rmux.picker.fzf.mappings.pane")
 local FzfMapSelect = require("rmux.picker.fzf.mappings.select")
 local FzfMapTarget = require("rmux.picker.fzf.mappings.target")
 local Fzfmap_grepper = require("rmux.picker.fzf.mappings.greperr")
+local FzfmapUtils = require("rmux.picker.fzf.utils")
 
 local M = {}
 
@@ -22,7 +23,7 @@ local function format_title(str, icon, icon_hl)
 end
 
 local fzfopts = {
-	prompt = "  ",
+	prompt = "   ",
 	cwd_prompt = false,
 	cwd_header = false,
 	no_header = true,
@@ -70,18 +71,25 @@ function M.select_rmuxfile()
 	fzf.files(fzfopts)
 end
 
-function M.gen_select(tbl)
+function M.gen_select(tbl, title)
 	vim.validate({
 		tbl = { tbl, "table" },
+		title = { title, "string" },
 	})
 
-	fzfopts.actions = vim.tbl_extend("keep", FzfMapSelect.enter(), {})
+	local col, row = FzfmapUtils.get_col_row()
 
+	-- fzfopts.fzf_opts = { ["--header"] = [[ Alt-a: Run All | Alt-c: Kill All]] }
 	fzfopts.winopts_fn = function()
-		-- local cols = 50
-		-- local collss = cols > 80 and cols / 2 - 25 or cols
-		return { width = 60, height = 25, row = 2 }
+		return {
+			title = format_title(title:gsub("^%l", string.upper), "", "Boolean"),
+			width = 60,
+			height = 25,
+			col = col,
+			row = row,
+		}
 	end
+	fzfopts.actions = vim.tbl_extend("keep", FzfMapSelect.enter(), {})
 
 	-- NOTE: gabungkan dengan built command seperti `watcher`,
 	-- pada `tbl`
@@ -102,6 +110,8 @@ function M.grep_err(opts, pane_num)
 		return
 	end
 
+	local col, row = FzfmapUtils.get_col_row()
+
 	fzfopts.winopts.title = format_title(titleMsg:gsub("^%l", string.upper), "", "Boolean")
 	fzfopts.actions = vim.tbl_extend("keep", {}, Fzfmap_grepper.enter(), Fzfmap_grepper.send_qf())
 	-- fzfopts.fzf_opts = {
@@ -113,8 +123,6 @@ function M.grep_err(opts, pane_num)
 	fzfopts.winopts_fn = function()
 		local win_height = math.ceil(vim.api.nvim_get_option_value("lines", {}) * 0.5)
 		local win_width = math.ceil(vim.api.nvim_get_option_value("columns", {}) * 1)
-		local col = math.ceil((vim.api.nvim_get_option_value("columns", {}) - win_width) * 1)
-		local row = math.ceil((vim.api.nvim_get_option_value("lines", {}) - win_height) * 1 - 3)
 		return {
 			width = win_width,
 			height = win_height,

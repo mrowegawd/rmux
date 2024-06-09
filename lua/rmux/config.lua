@@ -26,7 +26,7 @@ function M.update_settings(opts)
 	M.settings = merge_settings(default_settings, opts)
 
 	M.settings.prefix_title = "RMUX"
-	M.settings.run_support_with = { "mux", "tt", "toggleterm", "wez" }
+	M.settings.run_support_with = { "mux", "toggleterm", "wez", "termim", "auto" }
 	M.settings.sendID = ""
 	M.settings.provider_cmd = {
 		RUN_FILE = "run_file",

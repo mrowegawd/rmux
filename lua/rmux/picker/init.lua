@@ -6,12 +6,7 @@ function M.generator_select(tbl)
 	vim.validate({
 		tbl = { tbl, "table" },
 	})
-	-- return vim.ui.select(tbl, {
-	-- 	prompt = "Select tasks:",
-	-- }, function(a)
-	-- 	print(a)
-	-- end)
-	return Fzf.gen_select(tbl)
+	return Fzf.gen_select(tbl, "Run Cmds")
 end
 
 function M.load_tasks_list()
@@ -23,8 +18,6 @@ function M.load_tasks_list()
 		end
 	end
 	M.generator_select(task_names)
-
-	return "asdfa "
 end
 
 return M

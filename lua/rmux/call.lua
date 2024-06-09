@@ -135,13 +135,18 @@ function M.command(opts, state_cmd)
 			"supported commands (`run_with`): " .. table.concat(Config.settings.run_support_with, ", ")
 		)
 
-		if Config.settings.base.run_with == "mux" then
-			if not os.getenv("TMUX") then
-				Config.settings.base.run_with = "toggleterm"
+		local run_with = Config.settings.base.run_with
+		if run_with == "auto" then
+			if os.getenv("TMUX") then
+				Config.settings.base.run_with = "mux"
+			else
+				vim.cmd([[OverseerRun]])
+				return
 			end
-		end
-
-		if Config.settings.base.run_with == "wez" then
+		elseif run_with == "mux" then
+			Config.settings.base.run_with = "mux"
+		elseif run_with == "wez" then
+			Config.settings.base.run_with = "wez"
 			if os.getenv("TMUX") then
 				Config.settings.base.run_with = "mux"
 			end

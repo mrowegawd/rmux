@@ -56,8 +56,8 @@ function M.send_runfile(opts, state_cmd)
 				tonumber(pane_id),
 				open_pane,
 				state_cmd,
-				opts.command,
-				opts.regex
+				opts.command
+				-- opts.regex
 			)
 		end
 	end
