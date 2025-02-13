@@ -7,6 +7,9 @@ local M = {}
 function M.enter()
 	return {
 		["default"] = function(selected, _)
+			if selected[1] == nil then
+				return
+			end
 			local pth = FzfMapUtils.__strip_str(selected[1])
 			if pth == nil then
 				return
@@ -19,6 +22,9 @@ function M.enter()
 			vim.cmd("0")
 		end,
 		["ctrl-e"] = function(selected, _)
+			if selected[1] == nil then
+				return
+			end
 			local pth = FzfMapUtils.__strip_str(selected[1])
 			if pth == nil then
 				return
@@ -33,6 +39,9 @@ end
 function M.delete()
 	return {
 		["ctrl-x"] = function(selected, _)
+			if selected[1] == nil then
+				return
+			end
 			local pth = FzfMapUtils.__strip_str(selected[1])
 			if pth == nil then
 				return

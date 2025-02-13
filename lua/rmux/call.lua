@@ -6,6 +6,7 @@ local Picker = require("rmux.picker")
 
 local M = {}
 
+local use_default_provider = false
 local augroup = vim.api.nvim_create_augroup("RMUX_AUKILL", { clear = true })
 
 local function _auto_kill()
@@ -24,13 +25,20 @@ end
 -- 	Integs:open_all_panes()
 -- end
 
--- local function _run_grep_err()
--- 	require("rmux.integrations." .. Config.settings.base.run_with).grep_string_pane(Config.settings.sendID)
--- 	_auto_kill()
--- end
+local function _run_grep_err()
+	if use_default_provider then
+		Util.warn({ msg = "Cannot process, currently using the default provider (overseer)", setnotif = true })
+		return
+	end
+	Integs:find_err()
+end
 
 local function _run_file()
-	Picker.load_tasks_list()
+	if use_default_provider then
+		vim.cmd.OverseerRun()
+		return
+	end
+	Picker.load_tasks_list(Integs)
 end
 
 local function _open_repl()
@@ -55,14 +63,14 @@ end
 -- 	require("rmux.integrations." .. Config.settings.base.run_with).send_interrupt(true)
 -- end
 --
--- ---@diagnostic disable-next-line: unused-local
--- local function _Xchange_target_pane(opts)
--- 	if require("rmux.integrations." .. Config.settings.base.run_with .. ".util").get_total_active_panes() == 1 then
--- 		return Util.info({ msg = "No pane active", setnotif = true })
--- 	end
---
--- 	Fzf.target_pane()
--- end
+local function _target_pane()
+	if use_default_provider then
+		Util.warn({ msg = "Cannot process, currently using the default provider (overseer)", setnotif = true })
+		return
+	end
+
+	Integs:select_target_panes()
+end
 
 -- local function _Xedit_or_reload_config(isEdit, isFzf)
 -- 	isEdit = isEdit or false
@@ -106,6 +114,10 @@ end
 -- end
 
 function _Xkill_all_panes()
+	if use_default_provider then
+		vim.cmd.OverseerToggle()
+		return
+	end
 	Integs:close_all_panes()
 end
 
@@ -122,67 +134,68 @@ local packagejson = require("rmux.templates.packagejson")
 function M.command(opts, state_cmd)
 	local taskrc = tmpl:register()
 	taskrc:set_template({ vscode, rmuxjson, packagejson })
-	Config.settings.langs = {}
+	Config.settings.tasks = {}
 
-	if taskrc:is_load() then
-		-- NOTE: this for test, checking output Config.settings.langs
-		-- for _, x in pairs(Config.settings.langs) do
-		-- 	print(vim.inspect(x.builder({})))
-		-- end
+	if not taskrc:is_load() then
+		if not use_default_provider then
+			Util.info({
+				msg = "File `tasks.json` does not exist. using the default provider: overseer",
+				setnotif = true,
+			})
+		end
+		use_default_provider = true
+	else
+		use_default_provider = false
+	end
 
-		assert(
-			vim.tbl_contains(Config.settings.run_support_with, Config.settings.base.run_with),
-			"supported commands (`run_with`): " .. table.concat(Config.settings.run_support_with, ", ")
-		)
+	assert(
+		vim.tbl_contains(Config.settings.run_support_with, Config.settings.base.run_with),
+		"Supported commands (`run_with`): " .. table.concat(Config.settings.run_support_with, ", ")
+	)
 
-		local run_with = Config.settings.base.run_with
-		if run_with == "auto" then
-			if os.getenv("TMUX") then
-				Config.settings.base.run_with = "mux"
-			else
-				vim.cmd([[OverseerRun]])
-				return
-			end
-		elseif run_with == "mux" then
+	local run_with = Config.settings.base.run_with
+	if run_with == "auto" then
+		if os.getenv("TMUX") then
 			Config.settings.base.run_with = "mux"
-		elseif run_with == "wez" then
-			Config.settings.base.run_with = "wez"
-			if os.getenv("TMUX") then
-				Config.settings.base.run_with = "mux"
-			end
-		end
-
-		_auto_kill()
-
-		opts = opts or ""
-		local call_cmds = {
-			["run_file"] = _run_file,
-			-- ["run_tasks_all"] = _run_tasks_all,
-			-- ["run_grep_err"] = _run_grep_err,
-
-			["run_openrepl"] = _open_repl,
-
-			["run_sendline"] = _send_line,
-			["run_vsendline"] = _send_visual,
-
-			-- ["change_target_pane"] = _Xchange_target_pane,
-
-			["interrupt_single"] = _Xsend_interrupt,
-			-- ["interrupt_all"] = _Xsend_interrupt_all,
-
-			-- ["clear_all_pane_screen"] = _Xkill_all_panes,
-			--
-			-- ["edit_or_reload_config"] = _Xedit_or_reload_config,
-			-- ["redit_config"] = Xredit_config,
-
-			["kill_all_panes"] = _Xkill_all_panes,
-		}
-
-		if call_cmds[state_cmd] ~= nil then
-			return call_cmds[state_cmd]()
 		else
-			Util.warn({ msg = string.format("Provider cmds '%s' not implemented yet", state_cmd), setnotif = true })
+			Config.settings.base.run_with = "wez"
 		end
+	elseif run_with == "mux" then
+		Config.settings.base.run_with = "mux"
+	elseif run_with == "wez" then
+		Config.settings.base.run_with = "wez"
+	end
+
+	_auto_kill()
+
+	opts = opts or ""
+	local call_cmds = {
+		["run_file"] = _run_file,
+		-- ["run_tasks_all"] = _run_tasks_all,
+		["run_grep_err"] = _run_grep_err,
+
+		["run_openrepl"] = _open_repl,
+
+		["run_sendline"] = _send_line,
+		["run_vsendline"] = _send_visual,
+
+		["run_target_pane"] = _target_pane,
+
+		["interrupt_single"] = _Xsend_interrupt,
+		-- ["interrupt_all"] = _Xsend_interrupt_all,
+
+		-- ["clear_all_pane_screen"] = _Xkill_all_panes,
+		--
+		-- ["edit_or_reload_config"] = _Xedit_or_reload_config,
+		-- ["redit_config"] = Xredit_config,
+
+		["kill_all_panes"] = _Xkill_all_panes,
+	}
+
+	if call_cmds[state_cmd] ~= nil then
+		return call_cmds[state_cmd]()
+	else
+		Util.warn({ msg = string.format("Provider command '%s' not implemented yet", state_cmd), setnotif = true })
 	end
 end
 

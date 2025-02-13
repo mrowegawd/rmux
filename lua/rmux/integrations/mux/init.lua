@@ -1,5 +1,8 @@
+local Path = require("plenary.path")
 local Util = require("rmux.utils")
 local Constant = require("rmux.constant")
+
+local size_pane = 19
 
 local M = {}
 function M.pane_iszoom()
@@ -14,28 +17,30 @@ function M.reset_resize_pane()
 	return Util.normalize_return(vim.fn.system([[tmux select-layout -E]]))
 end
 
-function M.pane_capture(pane_num, grep_cmd)
-	local cmd = [[!tmux capture-pane -pJS - -t ]] .. pane_num .. " | sort -r | grep -oiE '" .. grep_cmd .. "' | tac"
-	return vim.api.nvim_exec2(cmd, { output = true })
+-- function M.pane_capture(pane_num, grep_cmd)
+-- 	local cmd = [[!tmux capture-pane -pJS - -t ]] .. pane_num .. " | sort -r | grep -oiE '" .. grep_cmd .. "' | tac"
+-- 	return vim.api.nvim_exec2(cmd, { output = true })
+-- end
+
+function M.cmd_str_capture_pane(pane_id, num_history_lines)
+	num_history_lines = num_history_lines or 10000
+	vim.validate({ pane_id = { pane_id, "string" }, num_history_lines = { num_history_lines, "number" } })
+	return { "tmux", "capture-pane", "-p", "-t", pane_id, "-S", -num_history_lines, "-e" }
 end
 
 function M.pane_exists(pane_id)
-	vim.validate({
-		pane_id = { pane_id, "string" },
-	})
-	return not (Util.normalize_return(vim.fn.system("tmux display -t " .. pane_id .. " -p '#{pane_id}'")) == "")
-	-- return not (
-	-- 	Util.normalize_return(vim.fn.system("tmux has-session -t " .. pane_idx .. " 2>/dev/null && echo 123")) == ""
-	-- )
+	vim.validate({ pane_id = { pane_id, "string" } })
+
+	local result = (Util.normalize_return(vim.fn.system("tmux display -t " .. pane_id .. " -p '#{pane_id}'")) == "")
+	local is_true = result ~= ""
+	return is_true
 end
 
 function M.get_pane_id(pane_idx)
-	vim.validate({
-		pane_idx = { tonumber(pane_idx), "number" },
-	})
+	vim.validate({ pane_idx = { tonumber(pane_idx), "number" } })
 	local pane_id = Util.normalize_return(vim.fn.system("tmux display -t " .. pane_idx .. " -p '#{pane_id}'"))
 
-	if pane_id:match("%%") then
+	if tostring(pane_id):match("%%") then
 		return pane_id
 	elseif #pane_id == 0 then
 		Util.warn({ msg = "pane_idx (index pane) is nil, its not active anymore" })
@@ -47,10 +52,7 @@ function M.get_pane_id(pane_idx)
 end
 
 function M.get_pane_idx(pane_id)
-	vim.validate({
-		pane_id = { pane_id, "string" },
-	})
-
+	vim.validate({ pane_id = { pane_id, "string" } })
 	return Util.normalize_return(vim.fn.system("tmux display -t " .. pane_id .. " -p '#{pane_index}'"))
 end
 
@@ -72,8 +74,15 @@ function M.get_pane_current_command(pane_idx)
 end
 
 function M.get_total_active_panes()
-	-- return tonumber(Util.normalize_return(vim.fn.system("tmux display-message -p '#{window_panes}'")))
 	return tonumber(Util.normalize_return(vim.fn.system("tmux list-panes | wc -l")))
+end
+
+function M.get_lists_pane_id_opened()
+	local total_panes = {}
+	for i = 1, M.get_total_active_panes() do
+		total_panes[#total_panes + 1] = M.get_pane_id(i)
+	end
+	return total_panes
 end
 
 function M.get_last_active_pane()
@@ -81,7 +90,13 @@ function M.get_last_active_pane()
 end
 
 function M.get_current_pane_id()
-	return Util.normalize_return(vim.fn.system([[tmux list-panes | grep "active" | cut -d':' -f1]]))
+	return Util.normalize_return(vim.fn.system([[tmux display -p '#{pane_id}']]))
+end
+
+function M.get_current_pane_idx()
+	return Util.normalize_return(
+		vim.fn.system([[tmux display -t ]] .. M.get_current_pane_id() .. [[ -p '#{pane_index}']])
+	)
 end
 
 function M.pane_cmd(cmd)
@@ -94,14 +109,12 @@ function M.get_id_next_pane()
 end
 
 function M.get_pane_target(pane_idx)
-	vim.validate({
-		pane_idx = { tonumber(pane_idx), "number" },
-	})
+	vim.validate({ pane_idx = { tonumber(pane_idx), "number" } })
 	return Util.normalize_return(vim.fn.system("tmux display-message -t " .. pane_idx .. ' -p "#{pane_id}"'))
 end
 
 function M.kill_pane(pane_id)
-	if #pane_id > 0 then
+	if M.pane_exists(pane_id) then
 		return vim.fn.system("tmux kill-pane -t " .. pane_id)
 	end
 end
@@ -112,6 +125,50 @@ end
 
 function M.sendClearScreen()
 	return "clear"
+end
+
+function M.back_to_pane(pane_idx)
+	vim.validate({ pane_idx = { pane_idx, "number" } })
+	vim.fn.system("tmux select-pane -t " .. pane_idx)
+end
+
+function M.jump_to_pane_id(pane_id)
+	vim.validate({ pane_idx = { pane_id, "string" } })
+	vim.fn.system("tmux select-pane -t " .. pane_id)
+end
+
+function M.check_right_pane_current_command()
+	M.go_right_pane()
+	return Util.normalize_return(
+		vim.fn.system([[tmux display -p "#{pane_id} #{pane_current_command}" | awk '$2 == "zsh" { print $2; exit }']])
+	)
+end
+
+function M.check_right_pane_id()
+	M.go_right_pane()
+	return Util.normalize_return(vim.fn.system([[tmux display -p "#{pane_id}"]]))
+end
+
+function M.is_pane_at_bottom()
+	-- outout 1 or 0, 1 -> yes, pane at bottom
+	if tonumber(Util.normalize_return(vim.fn.system("tmux display -p '#{pane_at_bottom}'"))) == 1 then
+		return true
+	end
+	return false
+end
+
+function M.go_right_pane()
+	vim.fn.system("tmux select-pane -R")
+end
+function M.go_left_pane()
+	vim.fn.system("tmux select-pane -L")
+end
+-- function M.go_last_pane()
+-- 	vim.fn.system("tmux last-pane")
+-- end
+
+function M.jump_to_last_pane()
+	vim.fn.system("tmux last-pane")
 end
 
 function M.create_finder_target_pane()
@@ -141,67 +198,40 @@ function M.create_finder_err(output)
 	return Util.rm_duplicates_tbl(output)
 end
 
-function M.back_to_pane(pane_idx)
-	pane_idx = pane_idx or 1
+-- local function _width_pane()
+-- 	local win_width = vim.api.nvim_get_option_value("lines", {})
+--
+-- 	local w = math.floor((win_width * 0.1) - 5)
+-- 	if w < 40 then
+-- 		return 55
+-- 	end
+-- 	return w
+-- end
 
-	vim.validate({
-		pane_idx = { tonumber(pane_idx), "number" },
-	})
-	vim.fn.system("tmux select-pane -t " .. pane_idx)
-end
+function M.create_new_pane(expand_pane)
+	expand_pane = expand_pane or false
 
-function M.check_right_pane_current_command()
-	M.go_right_pane()
-	return Util.normalize_return(
-		vim.fn.system([[tmux display -p "#{pane_id} #{pane_current_command}" | awk '$2 == "zsh" { print $2; exit }']])
-	)
-end
-
-function M.check_right_pane_id()
-	M.go_right_pane()
-	return Util.normalize_return(vim.fn.system([[tmux display -p "#{pane_id}"]]))
-end
-
-function M.go_right_pane()
-	vim.fn.system("tmux select-pane -R")
-end
-function M.go_left_pane()
-	vim.fn.system("tmux select-pane -L")
-end
-function M.go_last_pane()
-	vim.fn.system("tmux last-pane")
-end
-
-local function _width_pane()
-	local win_width = vim.api.nvim_get_option_value("lines", {})
-
-	local w = math.floor((win_width * 0.1) - 5)
-	if w < 40 then
-		return 55
-	end
-	return w
-end
-
-function M.create_new_pane()
-	local current_right_pane_command = M.check_right_pane_current_command()
-	if current_right_pane_command == "" then
-		-- print("yes go right and open pane")
-		local pane_id = Util.normalize_return(
+	local pane_id
+	if M.is_pane_at_bottom() and not expand_pane then
+		pane_id = Util.normalize_return(
 			vim.fn.system(
-				string.format(
-					"tmux split-window -h -p %s -l %s -c '#{pane_current_path}' | tmux display -p '#{pane_id}'",
-					_width_pane(),
-					_width_pane()
-				)
+				"tmux split-window -vl " .. size_pane .. " -c '#{pane_current_path}' | tmux display -p '#{pane_id}'"
 			)
 		)
+	end
 
+	if expand_pane then
+		M.jump_to_last_pane()
+		pane_id = Util.normalize_return(
+			vim.fn.system(
+				"tmux split-window -hl " .. size_pane .. " -c '#{pane_current_path}' | tmux display -p '#{pane_id}'"
+			)
+		)
+		M.reset_resize_pane()
+	end
+
+	if pane_id then
 		Constant.set_sendID(pane_id)
-		M.back_to_pane()
-	elseif current_right_pane_command == "zsh" then
-		-- print("already opened pane and current pane command is zsh")
-		M.get_left_pane()
-		M.back_to_pane()
 	end
 end
 
@@ -215,12 +245,19 @@ function M.get_left_pane()
 	end
 end
 
-function M.send_pane_cmd(pane_id, cmd_nvim, isnewline)
-	isnewline = isnewline or false
+function M.send_pane_cmd(task, isnewline)
 	vim.validate({
-		pane_id = { pane_id, "string", true },
-		cmd_nvim = { cmd_nvim, "string", true },
+		task = { task, "table", true },
+		isnewline = { isnewline, "boolean", true },
 	})
+
+	-- ensure cmd is not empty
+	if #task.builder.cmd == 0 then
+		return
+	end
+
+	local pane_id = task.pane_id
+	local cmd_msg = task.builder.cmd
 
 	if not M.pane_exists(pane_id) then
 		Util.warn({ msg = pane_id .. " pane not exist" })
@@ -231,12 +268,11 @@ function M.send_pane_cmd(pane_id, cmd_nvim, isnewline)
 		vim.fn.system("tmux send -t" .. pane_id .. " '" .. M.sendClearScreen() .. "' Enter ")
 	end
 
-	-- NOTE: cmd_nvim berisi question marks dalam ouputnya
-	-- jadi mesti hilangkan terlebih dahulu,
-	cmd_nvim = string.gsub(cmd_nvim, '"', "")
+	-- cmd_nvim contains question marks in its output so they must be removed first
+	cmd_msg = string.gsub(cmd_msg, '"', "")
 
 	local tmux_sendcmd = "tmux send -t " .. pane_id
-	local final_cmd = tmux_sendcmd .. " '" .. cmd_nvim .. "'" .. " Enter"
+	local final_cmd = tmux_sendcmd .. " '" .. cmd_msg .. "'" .. " Enter"
 	vim.fn.system(final_cmd)
 end
 
@@ -357,6 +393,71 @@ end
 
 function M.get_pane_height()
 	return Util.normalize_return(vim.fn.system("tput lines"))
+end
+
+function M.grep_err_output_commands(current_pane, target_panes, opts)
+	vim.validate({
+		current_pane = { current_pane, "string" },
+		target_panes = { target_panes, "table" },
+		opts = { opts, "table" },
+	})
+
+	local panes = target_panes
+	local grep_cmd = opts.grep_cmd
+	local regex = opts.regex
+
+	local num_history_lines = opts.num_history_lines or 10000
+
+	local results = {}
+
+	for _, pane in ipairs(panes) do
+		local pane_id = pane
+		if pane_id ~= current_pane then
+			local pane_path = Util.get_os_command_output({
+				"tmux",
+				"display",
+				"-pt",
+				pane_id,
+				"#{pane_current_path}",
+			})[1] or ""
+			local command_str = "tmux capture-pane -p -t "
+				.. pane_id
+				.. " -S "
+				.. -num_history_lines
+				.. " | "
+				.. grep_cmd
+				.. " '"
+				.. regex
+				.. "' | tr -d ' '"
+			local contents = Util.get_os_command_output({
+				"sh",
+				"-c",
+				command_str,
+			})
+			for _, line in ipairs(contents) do
+				-- parse path, line, col
+				local splits = {}
+				local i = 1
+				for part in string.gmatch(line, "[^:]+") do
+					splits[i] = part
+					i = i + 1
+				end
+				local path = Path:new(splits[1])
+				if not path:is_absolute() then
+					path = Path:new(pane_path, path)
+				end
+				if path:is_file() then
+					local result = { path = path:normalize(), lnum = splits[2], cnum = splits[3] }
+					local key = result.path .. ":" .. (result.lnum or "") .. ":" .. (result.cnum or "")
+					if results[key] == nil then
+						results[key] = result
+					end
+				end
+			end
+		end
+	end
+
+	return results
 end
 
 return M

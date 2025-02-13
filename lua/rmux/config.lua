@@ -10,7 +10,7 @@ local default_settings = {
 		auto_kill = true,
 		rmuxpath = vim.fn.expand("~/.config/nvim/runmux"),
 	},
-	langs = {},
+	tasks = {},
 }
 
 M.settings = {}
@@ -25,7 +25,6 @@ function M.update_settings(opts)
 	opts = opts or {}
 	M.settings = merge_settings(default_settings, opts)
 
-	M.settings.prefix_title = "RMUX"
 	M.settings.run_support_with = { "mux", "toggleterm", "wez", "termim", "auto" }
 	M.settings.sendID = ""
 	M.settings.provider_cmd = {
@@ -39,6 +38,8 @@ function M.update_settings(opts)
 		RUN_INTERRUPT_ALL = "interrupt_all",
 
 		RUN_GRAB_ERR = "run_grep_err",
+
+		RUN_TARGET_PANE = "run_target_pane",
 	}
 
 	return M.settings

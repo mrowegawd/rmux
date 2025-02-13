@@ -1,5 +1,7 @@
 local M = {}
 
+local Job = require("plenary.job")
+
 --  ╭──────────────────────────────────────────────────────────╮
 --  │                         GENERALS                         │
 --  ╰──────────────────────────────────────────────────────────╯
@@ -89,6 +91,25 @@ function M.normalize_return(str)
 	return str_slice
 end
 
+function M.get_os_command_output(cmd, cwd)
+	if type(cmd) ~= "table" then
+		M.warn({ msg = "cmd has to be a table", setnotif = true })
+		return {}
+	end
+
+	local command = table.remove(cmd, 1)
+	local stderr = {}
+	local stdout, ret = Job:new({
+		command = command,
+		args = cmd,
+		cwd = cwd,
+		on_stderr = function(_, data)
+			table.insert(stderr, data)
+		end,
+	}):sync()
+	return stdout, ret, stderr
+end
+
 --  ╭──────────────────────────────────────────────────────────╮
 --  │                        FILE UTILS                        │
 --  ╰──────────────────────────────────────────────────────────╯
@@ -148,9 +169,7 @@ function M.error(opts)
 end
 
 function M.info(opts)
-	vim.validate({
-		opts = { opts, "table" },
-	})
+	vim.validate({ opts = { opts, "table" } })
 
 	local notif = opts.setnotif or false
 	if notif then

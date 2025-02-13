@@ -16,7 +16,7 @@ end
 function VScode:load()
 	if self:is_taskjson_exists() then
 		overseer_vscode.generator({}, function(tbl_data)
-			Constant.insert_tbl_langs(tbl_data)
+			Constant.insert_tbl_tasks(tbl_data)
 		end)
 
 		return true

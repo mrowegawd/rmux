@@ -1,67 +1,45 @@
-local Config = require("rmux.config")
-local Util = require("rmux.utils")
 local Constant = require("rmux.constant")
+local Util = require("rmux.utils")
 
--- local Muxutil = require("rmux.integrations.mux.util")
-
-local M = {}
-
-function M.select()
+return function(Integs, opts)
 	return {
 		["default"] = function(selected, _)
-			print("yes")
-			-- if selected[1] == nil then
-			-- 	return
-			-- end
-			-- local pane_extnum = string.match(selected[1], "%s%d.%d")
-			--
-			-- local pane_number = pane_extnum:match("%d$")
-			-- Constant.set_sendID(Muxutil.get_pane_id(pane_number))
-			--
-			-- ---@diagnostic disable-next-line: unused-local
-			-- Constant.update_tbl_opened_panes(function(idx, pane)
-			-- 	if pane.state_cmd == Config.settings.provider_cmd.RUN_FILE then
-			-- 		pane.pane_id = Constant.get_sendID()
-			-- 	end
-			-- end)
-			--
-			-- local is_regex = "off"
-			-- local tbl_opened_panes = Config.settings.base.tbl_opened_panes
-			-- for i, _ in pairs(tbl_opened_panes) do
-			-- 	local pane_id = tbl_opened_panes[i].pane_id
-			-- 	local regex = tbl_opened_panes[i].regex
-			-- 	if pane_id == Constant.get_sendID() then
-			-- 		if #regex > 0 then
-			-- 			is_regex = "on"
-			-- 		end
-			-- 	end
-			-- end
-			--
-			-- Util.info({
-			-- 	msg = "Pane_num: " .. pane_number .. "\nPane_id: " .. Constant.get_sendID() .. "\nRegex: " .. is_regex,
-			-- 	setnotif = true,
-			-- })
-		end,
-	}
-end
+			if #selected == 0 then
+				return
+			end
 
-function M.delete()
-	return {
+			local pane_id = {}
+			local msg_selected_pane
+
+			if #selected == 1 then
+				local slice_str = vim.split(selected[1], " ")
+				pane_id[#pane_id + 1] = slice_str[1]
+				msg_selected_pane = slice_str[1]
+			end
+
+			if #selected > 1 then
+				for _, x in pairs(selected) do
+					local slice_str = vim.split(x, " ")
+					pane_id[#pane_id + 1] = slice_str[1]
+					msg_selected_pane = "[ " .. table.concat(pane_id, " ") .. " ]"
+				end
+			end
+
+			Constant.set_selected_pane(pane_id)
+			Util.info({ msg = "Select pane: " .. msg_selected_pane, setnotif = true })
+		end,
 		["ctrl-x"] = function(selected, _)
-			print("yes")
-			-- local sel = tostring(selected[1])
-			--
-			-- local pane_extnum = string.match(sel, "%s%d.%d%s")
-			--
-			-- local panenum = string.match(tostring(pane_extnum), "%d%s$")
-			--
-			-- -- print(pane_extnum .. " .. " .. panenum)
-			-- if panenum ~= nil then
-			-- 	Muxutil.kill_pane(panenum)
-			-- 	require("fzf-lua").resume()
-			-- end
+			if selected[1] == nil then
+				return
+			end
+			local slice_str = vim.split(selected[1], " ")
+			local pane_id = slice_str[1]
+
+			if pane_id then
+				Integs.kill_pane(pane_id)
+			end
+
+			-- TODO: update table tbl_opened_panes tasks nya karena sudah di delete
 		end,
 	}
 end
-
-return M

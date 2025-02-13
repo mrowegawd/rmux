@@ -7,8 +7,8 @@ local M = {}
 local error_message
 
 local function err_loadMsg()
-	if #Config.settings.langs == nil then
-		Util.error({ msg = "table 'langs' is empty" })
+	if #Config.settings.tasks == nil then
+		Util.error({ msg = "table 'tasks' is empty" })
 		return false
 	end
 
@@ -19,6 +19,30 @@ local function err_loadMsg()
 	end
 
 	return true
+end
+
+local function remove_percent(s)
+	return vim.split(s:gsub("%%", ""), " ")[1]
+end
+
+local function capitalize_first_letter(str)
+	return (str:gsub("^%l", string.upper))
+end
+
+function M.status_panes_targeted()
+	local selected_panes = Config.settings.base.selected_panes
+
+	if selected_panes and #selected_panes > 0 then
+		local result = {}
+
+		for _, value in ipairs(selected_panes) do
+			table.insert(result, remove_percent(value))
+		end
+
+		table.insert(result, " " .. capitalize_first_letter(Config.settings.base.run_with))
+		return table.concat(result, "|")
+	end
+	return ""
 end
 
 --  ╭──────────────────────────────────────────────────────────╮
@@ -53,11 +77,11 @@ local cmds = {
 			Call.command(Config.settings.sendID, Config.settings.provider_cmd.RUN_VSENDID)
 		end
 	end,
-	-- ["RmuxTargetPane"] = function()
-	-- 	if err_loadMsg() then
-	-- 		Call.command({}, "change_target_pane")
-	-- 	end
-	-- end,
+	["RmuxSelectTargetPane"] = function()
+		if err_loadMsg() then
+			Call.command(Config.settings.sendID, Config.settings.provider_cmd.RUN_TARGET_PANE)
+		end
+	end,
 	["RmuxGrepErr"] = function()
 		if err_loadMsg() then
 			Call.command({}, Config.settings.provider_cmd.RUN_GRAB_ERR)

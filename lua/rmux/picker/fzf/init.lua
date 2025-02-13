@@ -3,33 +3,45 @@ if not has_fzf then
 	error("This extension requires fzf.nvim (https://github.com/ibhagwan/fzf-lua)")
 end
 
-local Config = require("rmux.config")
+local previewer_builtin = require("fzf-lua.previewer.builtin")
+local previewer_fzf = require("fzf-lua.previewer.fzf")
 
-local FzfMapPane = require("rmux.picker.fzf.mappings.pane")
 local FzfMapSelect = require("rmux.picker.fzf.mappings.select")
+local FzfmapGrepErr = require("rmux.picker.fzf.mappings.greperr")
+-- local FzfMapPane = require("rmux.picker.fzf.mappings.pane")
 local FzfMapTarget = require("rmux.picker.fzf.mappings.target")
-local Fzfmap_grepper = require("rmux.picker.fzf.mappings.greperr")
-local FzfmapUtils = require("rmux.picker.fzf.utils")
 
 local M = {}
 
+local function h(name)
+	return vim.api.nvim_get_hl(0, { name = name })
+end
+
+-- set hl-groups
+vim.api.nvim_set_hl(0, "RunmuxPromptTitle", { fg = h("Normal").bg, bg = h("Error").fg, italic = true, bold = true })
+vim.api.nvim_set_hl(0, "RunmuxIconTitle", { fg = h("Normal").bg, bg = h("Error").fg, italic = true, bold = true })
+vim.api.nvim_set_hl(0, "RunmuxNormal", { fg = h("Normal").bg, bg = h("Error").fg, italic = true, bold = true })
+function M.check_bottom_pane()
+	print(M.is_pane_at_bottom())
+end
+
 local function format_title(str, icon, icon_hl)
 	return {
-		{ " " },
-		{ (icon and icon .. " " or ""), icon_hl or "DevIconDefault" },
-		{ str, "Bold" },
-		{ " " },
+		{ " ", "RunmuxNormal" },
+		{ (icon and icon .. " " or ""), icon_hl or "RunmuxIconTitle" },
+		{ str, "RunmuxPromptTitle" },
+		{ " ", "RunmuxNormal" },
 	}
 end
 
 local fzfopts = {
-	prompt = "   ",
+	prompt = "  ",
 	cwd_prompt = false,
 	cwd_header = false,
 	no_header = true,
 	no_header_i = true,
 	winopts = {
-		hl = { normal = "Normal" },
+		-- hls = { normal = "Normal" },
 		border = "rounded",
 		height = 0.4,
 		width = 0.30,
@@ -38,100 +50,179 @@ local fzfopts = {
 	},
 }
 
-function M.target_pane()
-	local Term = require("rmux." .. Config.settings.base.run_with .. ".util")
-	local titleMsg = "pane-target"
+function M.select_pane(Integs, opts)
+	vim.validate({ opts = { opts, "table" }, Integs = { Integs, "table" } })
 
-	fzfopts.winopts.title = format_title(titleMsg:gsub("^%l", string.upper), "", "Boolean")
-	fzfopts.actions = vim.tbl_extend("keep", FzfMapTarget.select(), FzfMapTarget.delete())
-	fzfopts.fzf_opts = { ["--header"] = [[Ctrl-x:'delete pane']] }
-	fzfopts.winopts.preview = { hidden = "hidden" }
-	fzfopts.winopts_fn = function()
-		local cols = vim.o.columns - 50
-		local collss = cols > 80 and cols - 80 or cols / 2
-		return { width = 60, height = 15, row = 15, col = collss }
+	local function format_results()
+		local items = {}
+		for i, result in pairs(opts.results) do
+			if type(result) == "table" and result.builder ~= nil then
+				items[#items + 1] = i .. "   " .. result.builder.name
+			else
+				items[#items + 1] = i
+			end
+		end
+		return items
 	end
-	fzf.fzf_exec(Term.create_finder_target_pane(), fzfopts)
+
+	local CmdAsyncPreviewer = previewer_fzf.cmd_async:extend()
+	function CmdAsyncPreviewer:new(o, optsc)
+		CmdAsyncPreviewer.super.new(self, o, optsc)
+		return self
+	end
+
+	function CmdAsyncPreviewer:parse_entry_and_verify(entry_str)
+		if entry_str then
+			local slice_str = vim.split(entry_str, " ")
+			local pane_id = slice_str[1]
+			local cmd_capture = Integs.cmd_str_capture_pane(pane_id)
+			return "", "", table.concat(cmd_capture, " ")
+		end
+		return {}
+	end
+
+	fzfopts.previewer = {
+		_ctor = function()
+			return CmdAsyncPreviewer
+		end,
+	}
+	fzfopts.actions = vim.tbl_extend("keep", FzfMapTarget(Integs, opts.results), {})
+	fzfopts.fzf_opts = { ["--header"] = [[CTRL-x:delete-pane]] }
+	fzfopts.winopts = function()
+		return {
+			title = format_title(opts.title, " "),
+			width = 0.95,
+			height = 0.80,
+			col = 0.50,
+			row = 0.60,
+			preview = { horizontal = "right:50%", vertical = "down:50%" },
+		}
+	end
+
+	fzf.fzf_exec(format_results(), fzfopts)
 end
 
-function M.select_rmuxfile()
-	local Term = require("rmux." .. Config.settings.base.run_with .. ".util")
+-- function M.select_rmuxfile()
+-- 	local Term = require("rmux." .. Config.settings.base.run_with .. ".util")
+--
+-- 	local titleMsg = "Load rmux from storage"
+-- 	fzfopts.cwd = Config.settings.base.rmuxpath
+-- 	fzfopts.fzf_opts = { ["--header"] = [[Ctrl-x:delete-json]] }
+-- 	fzfopts.cmd = Term.create_finder_files()
+-- 	fzfopts.actions = vim.tbl_extend("keep", FzfMapPane.enter(), FzfMapPane.delete())
+-- 	fzfopts.winopts = function()
+-- 		local cols = vim.o.columns - 50
+-- 		local collss = cols > 80 and cols / 2 - 25 or cols
+-- 		return {
+-- 			width = 100,
+-- 			height = 25,
+-- 			row = 10,
+-- 			col = collss,
+-- 			title = format_title(titleMsg:gsub("^%l", string.upper), ""),
+-- 		}
+-- 	end
 
-	local titleMsg = "Load rmux from storage"
-	fzfopts.winopts.title = format_title(titleMsg:gsub("^%l", string.upper), "", "Boolean")
-	fzfopts.cwd = Config.settings.base.rmuxpath
-	fzfopts.fzf_opts = { ["--header"] = [[Ctrl-x:'delete json']] }
-	fzfopts.cmd = Term.create_finder_files()
-	fzfopts.actions = vim.tbl_extend("keep", FzfMapPane.enter(), FzfMapPane.delete())
-	fzfopts.winopts_fn = function()
-		local cols = vim.o.columns - 50
-		local collss = cols > 80 and cols / 2 - 25 or cols
-		return { width = 100, height = 25, row = 10, col = collss }
-	end
-	fzf.files(fzfopts)
-end
-
-function M.gen_select(tbl, title)
+function M.gen_select(Integs, tbl, title)
 	vim.validate({
 		tbl = { tbl, "table" },
 		title = { title, "string" },
 	})
 
-	local col, row = FzfmapUtils.get_col_row()
+	local title_str = title:gsub("^%l", string.upper)
 
-	-- fzfopts.fzf_opts = { ["--header"] = [[ Alt-a: Run All | Alt-c: Kill All]] }
-	fzfopts.winopts_fn = function()
+	fzfopts.fzf_opts = { ["--header"] = [[CTRL-O:OverseerCommands  CTRL-R:Watch]] }
+	fzfopts.winopts = function()
 		return {
-			title = format_title(title:gsub("^%l", string.upper), "", "Boolean"),
-			width = 60,
-			height = 25,
-			col = col,
-			row = row,
+			title = format_title(title_str, "󰑮"),
+			width = 0.40,
+			height = #tbl + 4,
+			col = 0.50,
+			row = 0.50,
+			preview = { hidden = "hidden" },
 		}
 	end
-	fzfopts.actions = vim.tbl_extend("keep", FzfMapSelect.enter(), {})
 
-	-- NOTE: gabungkan dengan built command seperti `watcher`,
-	-- pada `tbl`
+	fzfopts.actions = vim.tbl_extend("keep", FzfMapSelect(Integs, title_str), {})
+
 	fzf.fzf_exec(tbl, fzfopts)
 end
 
-function M.grep_err(opts, pane_num)
-	local Term = require("rmux." .. Config.settings.base.run_with .. ".util")
-	opts = opts or {}
-	local titleMsg = "Select errors [" .. pane_num .. "]"
+function M.grep_err(opts)
+	vim.validate({ opts = { opts, "table" } })
 
-	local path_cwd
-	if #Config.settings.base.rmuxpath > 0 then
-		path_cwd = Config.settings.base.rmuxpath
+	opts.num_history_lines = opts.num_history_lines or 10000
+	opts.grep_cmd = opts.grep_cmd or "grep -oP"
+	opts.regex = opts.regex or "(([.\\w\\-~\\$@]+)(\\/?[\\w\\-@]+)+\\/?)\\.([\\w]+)(:\\d*:\\d*)?"
+	opts.title = opts.title or "NOne"
+
+	local function format_results()
+		local items = {}
+		for i, _ in pairs(opts.results) do
+			items[#items + 1] = i
+		end
+		return items
 	end
 
-	if path_cwd == nil then
-		return
+	local GrepErrPreviewer = previewer_builtin.buffer_or_file:extend()
+	function GrepErrPreviewer:new(o, optsc, fzf_win)
+		GrepErrPreviewer.super.new(self, o, optsc, fzf_win)
+		setmetatable(self, GrepErrPreviewer)
+		return self
 	end
 
-	local col, row = FzfmapUtils.get_col_row()
+	function GrepErrPreviewer:parse_entry(entry_str)
+		if entry_str then
+			-- jika entry_str = ["./main.go:23:2"] = {
+			--                        cnum = "2",
+			--                        lnum = "23",
+			--                        path = "./main.go"
+			--                  },
+			-- sama dengan key dari results
+			local data
+			for i, x in pairs(opts.results) do
+				if entry_str == i then
+					local line
+					if x.lnum == nil then
+						line = 1
+					end
 
-	fzfopts.winopts.title = format_title(titleMsg:gsub("^%l", string.upper), "", "Boolean")
-	fzfopts.actions = vim.tbl_extend("keep", {}, Fzfmap_grepper.enter(), Fzfmap_grepper.send_qf())
-	-- fzfopts.fzf_opts = {
-	-- 	["--header"] = [[default:'go-to-file']],
-	-- 	["--no-sort"] = "",
-	-- }
-	fzfopts.sort = true
-	fzfopts.winopts.preview = { hidden = "hidden" }
-	fzfopts.winopts_fn = function()
-		local win_height = math.ceil(vim.api.nvim_get_option_value("lines", {}) * 0.5)
-		local win_width = math.ceil(vim.api.nvim_get_option_value("columns", {}) * 1)
+					line = x.lnum
+					data = {
+						path = x.path,
+						line = line,
+						col = x.cnum,
+					}
+				end
+			end
+
+			if data then
+				return data
+			end
+		end
+
+		return {}
+	end
+
+	fzfopts.previewer = {
+		_ctor = function()
+			return GrepErrPreviewer
+		end,
+	}
+	fzfopts.fzf_opts = { ["--header"] = [[CTRL-V:open-vertical  CTRL-S:open-split  CTRL-T:open-in-tab]] }
+	fzfopts.winopts = function()
 		return {
-			width = win_width,
-			height = win_height,
-			row = row,
-			col = col,
+			title = format_title(opts.title, " "),
+			width = 0.95,
+			height = 0.80,
+			col = 0.50,
+			row = 0.60,
+			preview = { horizontal = "right:50%", vertical = "down:50%" },
 		}
 	end
 
-	fzf.fzf_exec(Term.create_finder_err(opts), fzfopts)
+	fzfopts.actions = vim.tbl_extend("keep", FzfmapGrepErr(opts.results), {})
+
+	fzf.fzf_exec(format_results(), fzfopts)
 end
 
 return M

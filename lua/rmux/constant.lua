@@ -2,17 +2,15 @@ local Config = require("rmux.config")
 
 local M = {}
 
-function M.insert_tbl_langs(tbl_data_langs)
-	vim.validate({
-		tbl_data_langs = { tbl_data_langs, "table" },
-	})
+function M.insert_tbl_tasks(tbl_data_task)
+	vim.validate({ tbl_data_langs = { tbl_data_task, "table" } })
 
-	-- if #tbl_data_langs == 0 then
-	-- 	Config.settings.langs = {}
+	-- if #tbl_data_tasks == 0 then
+	-- 	Config.settings.tasks = {}
 	-- end
 
-	for _, tasks in pairs(tbl_data_langs) do
-		table.insert(Config.settings.langs, tasks)
+	for _, tasks in pairs(tbl_data_task) do
+		table.insert(Config.settings.tasks, tasks)
 	end
 end
 
@@ -23,9 +21,6 @@ function M.set_insert_tbl_opened_panes(pane_id, pane_idx, name_cmd, builder, typ
 		name_cmd = { name_cmd, "string", true },
 		builder = { builder, "table", true },
 		type_strategy = { type_strategy, "string", true },
-		-- NOTE:
-		-- gimana cara nya membuat validate untuk 2 type (just like union)
-		-- contoh nya, type 'name_cmde': "string " | "table"?
 	})
 	return table.insert(Config.settings.base.tbl_opened_panes, {
 		pane_id = pane_id,
@@ -41,8 +36,8 @@ function M.get_tbl_opened_panes()
 end
 
 function M.update_tbl_opened_panes(fn)
-	for task_idx, tasks in pairs(Config.settings.base.tbl_opened_panes) do
-		fn(task_idx, tasks)
+	for idx, task in pairs(Config.settings.base.tbl_opened_panes) do
+		fn(idx, task)
 	end
 end
 
@@ -70,8 +65,17 @@ function M.get_sendID()
 	return Config.settings.sendID
 end
 
-function M.get_langs()
-	return Config.settings.langs
+function M.get_tasks()
+	return Config.settings.tasks
+end
+
+function M.set_selected_pane(panes_id)
+	vim.validate({ panes_id = { panes_id, "table" } })
+	Config.settings.base.selected_panes = panes_id
+end
+
+function M.get_selected_pane()
+	return Config.settings.base.selected_panes
 end
 
 ---------------------

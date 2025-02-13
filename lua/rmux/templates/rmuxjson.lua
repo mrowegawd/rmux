@@ -66,7 +66,7 @@ function RMuxjson:load()
 				table.insert(tbl_data, output_task)
 			end
 
-			Constant.insert_tbl_langs(tbl_data)
+			Constant.insert_tbl_tasks(tbl_data)
 			return true
 		end
 
