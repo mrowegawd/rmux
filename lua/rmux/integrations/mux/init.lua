@@ -30,10 +30,11 @@ end
 
 function M.pane_exists(pane_id)
 	vim.validate({ pane_id = { pane_id, "string" } })
-
 	local result = (Util.normalize_return(vim.fn.system("tmux display -t " .. pane_id .. " -p '#{pane_id}'")) == "")
-	local is_true = result ~= ""
-	return is_true
+	if type(result) == "boolean" and not result then
+		return true
+	end
+	return false
 end
 
 function M.get_pane_id(pane_idx)
@@ -57,10 +58,7 @@ function M.get_pane_idx(pane_id)
 end
 
 function M.is_pane_not_exists(pane_id)
-	vim.validate({
-		pane_id = { pane_id, "string" },
-	})
-
+	vim.validate({ pane_id = { pane_id, "string" } })
 	return M.pane_exists(M.get_pane_idx(pane_id))
 end
 

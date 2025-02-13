@@ -7,19 +7,6 @@ local Picker = require("rmux.picker")
 local M = {}
 
 local use_default_provider = false
-local augroup = vim.api.nvim_create_augroup("RMUX_AUKILL", { clear = true })
-
-local function _auto_kill()
-	if Config.settings.base.auto_kill and Config.settings.base.run_with ~= "toggleterm" then
-		vim.api.nvim_create_autocmd("ExitPre", {
-			pattern = "*",
-			group = augroup,
-			callback = function()
-				Integs:close_all_panes()
-			end,
-		})
-	end
-end
 
 -- local function _run_tasks_all()
 -- 	Integs:open_all_panes()
@@ -166,7 +153,7 @@ function M.command(opts, state_cmd)
 		Config.settings.base.run_with = "wez"
 	end
 
-	_auto_kill()
+	Integs:set_au_autokill()
 
 	opts = opts or ""
 	local call_cmds = {

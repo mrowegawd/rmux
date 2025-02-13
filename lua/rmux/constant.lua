@@ -78,6 +78,17 @@ function M.get_selected_pane()
 	return Config.settings.base.selected_panes
 end
 
+function M.set_watcher_status(status_watch)
+	vim.validate({ status_watch = { status_watch, "boolean" } })
+	if status_watch then
+		Config.settings.base.is_watcher = status_watch
+	end
+end
+
+function M.get_watcher_status()
+	return Config.settings.base.is_watcher
+end
+
 ---------------------
 function M.find_state_cmd_on_tbl_opened_panes(state_cmd)
 	-- assert(#Config.settings.base.tbl_opened_panes > 0, "get_tbl_opened_panes must greater than zero")

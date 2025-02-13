@@ -4,9 +4,8 @@ local Util = require("rmux.utils")
 local Picker = require("rmux.picker")
 
 local Integs = {} -- Integs: integ
-Integs.__index = Integs
 
-local is_watcher = false
+Integs.__index = Integs
 
 function Integs:run()
 	return require("rmux.integrations." .. Config.settings.base.run_with)
@@ -198,7 +197,9 @@ function Integs:send_line_range()
 	Integs:run().send_range_line()
 end
 
-function Integs:select_target_panes()
+function Integs:select_target_panes(is_watcher)
+	is_watcher = is_watcher or false
+
 	local cur_pane_id = Integs:run().get_current_pane_id()
 
 	local pane_lists = Integs:run().get_lists_pane_id_opened()
@@ -245,8 +246,8 @@ function Integs:select_target_panes()
 		list_panes = pane_opened
 	end
 
-	local opts = { results = list_panes }
-	Picker.select_pane(Integs:run(), opts)
+	local opts = { results = list_panes, is_watcher = is_watcher }
+	Picker.select_pane(Integs, opts)
 end
 
 function Integs:send_cmd() -- pengganti openREPL
@@ -257,32 +258,58 @@ function Integs:send_signal_interrupt()
 	Integs:run().send_interrupt()
 end
 
-local augroup = vim.api.nvim_create_augroup("RmuxWatcher", { clear = true })
 function Integs:watcher()
-	local selected_panes = Constant.get_selected_pane()
-	if selected_panes == nil or #selected_panes == 0 then
-		self:select_target_panes()
-		is_watcher = true
-	end
+	self:select_target_panes(true)
+end
 
-	if is_watcher then
+function Integs:unset_augroup(name)
+	vim.validate({ name = { name, "string" } })
+	pcall(vim.api.nvim_del_augroup_by_name, name)
+end
+
+local augroup_name = "RmuxWatcher"
+function Integs:set_au_watcher()
+	if Constant.get_watcher_status() then
+		Integs:unset_augroup(augroup_name) -- avoid duplicate augroup
+
+		local augroup = vim.api.nvim_create_augroup(augroup_name, { clear = true })
 		vim.api.nvim_create_autocmd("BufWritePre", {
 			pattern = "*",
 			group = augroup,
 			callback = function()
-				selected_panes = Constant.get_selected_pane()
+				local selected_panes = Constant.get_selected_pane()
+				local tbl_opened_panes = Constant.get_tbl_opened_panes()
+
 				for _, pane_id in pairs(selected_panes) do
 					if Integs:run().pane_exists(pane_id) then
-						local tbl_opened_panes = Constant.get_tbl_opened_panes()
 						for _, task in pairs(tbl_opened_panes) do
 							if task.pane_id == pane_id then
-								self:run_file(task.name, "shell")
+								Integs:run_file(task.name, "shell")
 							end
 						end
 					end
 				end
 			end,
 		})
+	end
+end
+
+local augroupkill = "RmuxAutoKill"
+local is_set_autokill = false
+function Integs:set_au_autokill()
+	if Config.settings.base.auto_kill and not is_set_autokill then
+		-- Hapus augroup jika sudah ada untuk mencegah duplikasi
+		Integs:unset_augroup(augroupkill)
+
+		local augroup = vim.api.nvim_create_augroup(augroupkill, { clear = true })
+		vim.api.nvim_create_autocmd("ExitPre", {
+			pattern = "*",
+			group = augroup,
+			callback = function()
+				Integs:close_all_panes()
+			end,
+		})
+		is_set_autokill = true
 	end
 end
 

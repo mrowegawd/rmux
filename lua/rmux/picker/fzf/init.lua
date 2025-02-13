@@ -75,7 +75,7 @@ function M.select_pane(Integs, opts)
 		if entry_str then
 			local slice_str = vim.split(entry_str, " ")
 			local pane_id = slice_str[1]
-			local cmd_capture = Integs.cmd_str_capture_pane(pane_id)
+			local cmd_capture = Integs:run().cmd_str_capture_pane(pane_id)
 			return "", "", table.concat(cmd_capture, " ")
 		end
 		return {}
@@ -86,7 +86,7 @@ function M.select_pane(Integs, opts)
 			return CmdAsyncPreviewer
 		end,
 	}
-	fzfopts.actions = vim.tbl_extend("keep", FzfMapTarget(Integs, opts.results), {})
+	fzfopts.actions = vim.tbl_extend("keep", FzfMapTarget(Integs, opts), {})
 	fzfopts.fzf_opts = { ["--header"] = [[CTRL-x:delete-pane]] }
 	fzfopts.winopts = function()
 		return {
