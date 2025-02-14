@@ -44,20 +44,7 @@ end
 ---------------------
 
 function M.set_sendID(send_pane)
-	if Config.settings.base.run_with == "mux" then
-		assert(
-			type(send_pane) == "string",
-			"Config.settings.base.sendID=" .. send_pane .. " but 'send_pane must be type of string"
-		)
-		local persent, _ = string.find(send_pane, [[%%]])
-		assert(persent == 1, "Config.settings.base.sendID=" .. send_pane .. " but 'sendID' must have prefix with %")
-	else
-		assert(
-			type(send_pane) == "number",
-			"Config.settings.base.sendID=" .. tostring(send_pane) .. " but 'send_pane' must be type of number"
-		)
-	end
-
+	vim.validate({ send_pane = { send_pane, "string" } })
 	Config.settings.sendID = send_pane
 end
 

@@ -1,6 +1,6 @@
+local Constant = require("rmux.constant")
 local Path = require("plenary.path")
 local Util = require("rmux.utils")
-local Constant = require("rmux.constant")
 
 local size_pane = 19
 
@@ -13,7 +13,8 @@ function M.pane_toggle_zoom()
 	return Util.normalize_return(vim.fn.system([[tmux resize-pane -Z]]))
 end
 
-function M.reset_resize_pane()
+function M.reset_resize_pane(pane_id)
+	pane_id = pane_id or ""
 	return Util.normalize_return(vim.fn.system([[tmux select-layout -E]]))
 end
 
@@ -75,6 +76,7 @@ function M.get_total_active_panes()
 	return tonumber(Util.normalize_return(vim.fn.system("tmux list-panes | wc -l")))
 end
 
+-- Get a list of pane IDs only; { 1, 2, 3 }
 function M.get_lists_pane_id_opened()
 	local total_panes = {}
 	for i = 1, M.get_total_active_panes() do
@@ -375,11 +377,9 @@ function M.open_vertical_pane(pane_strategy, size)
 
 	local tmux_split_cmd = "tmux split-window " .. pane_strategy .. " -l " .. tostring(size)
 	if pane_strategy == "-h" then
-		-- tmux_split_cmd = "tmux split-window " .. pane_strategy .. " -l " .. tostring(size)
 		tmux_split_cmd = "tmux split-window " .. pane_strategy
 	end
 
-	-- print(tmux_split_cmd)
 	vim.fn.system(tmux_split_cmd)
 
 	return Util.normalize_return(vim.fn.system("tmux display -p '#{pane_id}'"))
@@ -432,23 +432,25 @@ function M.grep_err_output_commands(current_pane, target_panes, opts)
 				"-c",
 				command_str,
 			})
-			for _, line in ipairs(contents) do
-				-- parse path, line, col
-				local splits = {}
-				local i = 1
-				for part in string.gmatch(line, "[^:]+") do
-					splits[i] = part
-					i = i + 1
-				end
-				local path = Path:new(splits[1])
-				if not path:is_absolute() then
-					path = Path:new(pane_path, path)
-				end
-				if path:is_file() then
-					local result = { path = path:normalize(), lnum = splits[2], cnum = splits[3] }
-					local key = result.path .. ":" .. (result.lnum or "") .. ":" .. (result.cnum or "")
-					if results[key] == nil then
-						results[key] = result
+			if contents then
+				for _, line in ipairs(contents) do
+					-- parse path, line, col
+					local splits = {}
+					local i = 1
+					for part in string.gmatch(line, "[^:]+") do
+						splits[i] = part
+						i = i + 1
+					end
+					local path = Path:new(splits[1])
+					if not path:is_absolute() then
+						path = Path:new(pane_path, path)
+					end
+					if path:is_file() then
+						local result = { path = path:normalize(), lnum = splits[2], cnum = splits[3] }
+						local key = result.path .. ":" .. (result.lnum or "") .. ":" .. (result.cnum or "")
+						if results[key] == nil then
+							results[key] = result
+						end
 					end
 				end
 			end

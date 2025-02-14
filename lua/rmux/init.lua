@@ -56,10 +56,6 @@ function M.setup(opts)
 	Config.settings.base.path = vim.fs.basename(Config.settings.base.fullpath)
 end
 
---  ╭──────────────────────────────────────────────────────────╮
---  │                      COMMANDS INIT                       │
---  ╰──────────────────────────────────────────────────────────╯
-
 local cmds = {
 	["RmuxRunFile"] = function()
 		if err_loadMsg() then

@@ -14,17 +14,18 @@ end
 function Integs:__jump_to_main_pane(main_pane_id)
 	vim.validate({ pane_id = { main_pane_id, "string" } })
 
-	local cur_pane_id = Integs:run().get_current_pane_id()
-	if main_pane_id ~= cur_pane_id then
-		Integs:run().jump_to_pane_id(main_pane_id)
-	end
+	-- local cur_pane_id = Integs:run().get_current_pane_id()
+	-- print("back to main pain? " .. cur_pane_id .. " " .. main_pane_id)
+	-- if main_pane_id ~= cur_pane_id then
+	Integs:run().jump_to_pane_id(main_pane_id)
+	-- end
 end
 
 function Integs:run_file(name_cmd, type_strategy)
 	local cur_pane_id = Integs:run().get_current_pane_id()
 	local tbl_opened_panes = Constant.get_tbl_opened_panes()
 
-	if #tbl_opened_panes == 0 or (Integs:run().get_total_active_panes() == 1) then
+	if #tbl_opened_panes == 0 and (Integs:run().get_total_active_panes() == 1) then
 		self:_respawn_pane()
 		tbl_opened_panes = Constant.get_tbl_opened_panes()
 		local sendID = Constant.get_sendID()
