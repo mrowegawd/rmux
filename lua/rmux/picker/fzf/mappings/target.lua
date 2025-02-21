@@ -43,7 +43,7 @@ return function(Integs, opts)
 			local pane_id = slice_str[1]
 
 			if pane_id then
-				Integs.kill_pane(pane_id)
+				Integs:kill_pane(pane_id)
 			end
 
 			-- TODO: update table tbl_opened_panes tasks nya karena sudah di delete

@@ -41,6 +41,16 @@ function M.update_tbl_opened_panes(fn)
 	end
 end
 
+function M.remove_pane_from_opened(pane_id)
+	local tbl_opened_panes = Config.settings.base.tbl_opened_panes
+	for idx, pane in ipairs(tbl_opened_panes) do
+		if pane.pane_id == pane_id then
+			table.remove(tbl_opened_panes, idx)
+			break
+		end
+	end
+end
+
 ---------------------
 
 function M.set_sendID(send_pane)
