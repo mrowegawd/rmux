@@ -208,27 +208,26 @@ end
 -- 	return w
 -- end
 
-function M.create_new_pane(expand_pane)
+function M.create_new_pane(cwd, expand_pane)
 	expand_pane = expand_pane or false
+	cwd = cwd or vim.fn.getcwd()
 
 	local pane_id
 	if M.is_pane_at_bottom() and not expand_pane then
 		pane_id = Util.normalize_return(
-			vim.fn.system(
-				"tmux split-window -vl " .. size_pane .. " -c '#{pane_current_path}' | tmux display -p '#{pane_id}'"
-			)
+			vim.fn.system("tmux split-window -vl " .. size_pane .. " -c " .. cwd .. " | tmux display -p '#{pane_id}'")
 		)
 	end
 
 	if expand_pane then
 		M.jump_to_last_pane()
 		pane_id = Util.normalize_return(
-			vim.fn.system(
-				"tmux split-window -hl " .. size_pane .. " -c '#{pane_current_path}' | tmux display -p '#{pane_id}'"
-			)
+			vim.fn.system("tmux split-window -hl " .. size_pane .. " -c " .. cwd .. " | tmux display -p '#{pane_id}'")
 		)
 		M.reset_resize_pane()
 	end
+
+	vim.uv.sleep(50)
 
 	if pane_id then
 		Constant.set_sendID(pane_id)

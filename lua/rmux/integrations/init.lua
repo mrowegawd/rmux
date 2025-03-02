@@ -180,11 +180,13 @@ end
 function Integs:_respawn_pane(expand_pane)
 	expand_pane = expand_pane or false
 
+	local cwd = vim.fn.getcwd()
+
 	local total_panes = self:run().get_total_active_panes()
 	if total_panes == 1 then
-		self:run().create_new_pane(false)
+		self:run().create_new_pane(cwd, false)
 	else
-		self:run().create_new_pane(true)
+		self:run().create_new_pane(cwd, true)
 	end
 end
 

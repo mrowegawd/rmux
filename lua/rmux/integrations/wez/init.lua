@@ -1,5 +1,5 @@
 local Constant = require("rmux.constant")
-local Path = require("plenary.path")
+-- local Path = require("plenary.path")
 local Util = require("rmux.utils")
 
 local Config = require("rmux.config")
@@ -413,12 +413,15 @@ function M.is_pane_at_bottom()
 	return false
 end
 
-function M.create_new_pane(expand_pane)
+function M.create_new_pane(cwd, expand_pane)
 	expand_pane = expand_pane or false
+	cwd = cwd or vim.fn.getcwd()
 
 	local pane_id
 	if M.is_pane_at_bottom() and not expand_pane then
-		pane_id = Util.normalize_return(vim.fn.system("wezterm cli split-pane --bottom --percent " .. size_pane))
+		pane_id = Util.normalize_return(
+			vim.fn.system("wezterm cli split-pane --bottom --percent " .. size_pane .. " --cwd " .. cwd)
+		)
 	end
 
 	-- Membuat layout pada wezterm agak berbeda dengan tmux, jika ingin membuat
@@ -436,12 +439,16 @@ function M.create_new_pane(expand_pane)
 
 		if get_direction_pane_id then
 			pane_id = Util.normalize_return(
-				vim.fn.system("wezterm cli split-pane --horizontal --pane-id " .. get_direction_pane_id)
+				vim.fn.system(
+					"wezterm cli split-pane --horizontal --pane-id " .. get_direction_pane_id .. " --cwd " .. cwd
+				)
 			)
 		else
-			pane_id = Util.normalize_return(vim.fn.system("wezterm cli split-pane --horizontal"))
+			pane_id = Util.normalize_return(vim.fn.system("wezterm cli split-pane --horizontal --cwd " .. cwd))
 		end
 	end
+
+	vim.uv.sleep(50)
 
 	if pane_id then
 		Constant.set_sendID(tostring(pane_id))
