@@ -22,7 +22,7 @@ end
 
 local function _run_file()
 	if use_default_provider then
-		vim.cmd.OverseerRun()
+		Picker.load_overseer(Integs)
 		return
 	end
 	Picker.load_tasks_list(Integs)

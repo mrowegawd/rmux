@@ -122,10 +122,11 @@ end
 -- 		}
 -- 	end
 
-function M.gen_select(Integs, tbl, title)
+function M.gen_select(Integs, tbl, title, is_overseer)
 	vim.validate({
 		tbl = { tbl, "table" },
 		title = { title, "string" },
+		is_overseer = { is_overseer, "boolean" },
 	})
 
 	local title_str = title:gsub("^%l", string.upper)
@@ -142,7 +143,7 @@ function M.gen_select(Integs, tbl, title)
 		}
 	end
 
-	fzfopts.actions = vim.tbl_extend("keep", FzfMapSelect(Integs, title_str), {})
+	fzfopts.actions = vim.tbl_extend("keep", FzfMapSelect(Integs, title_str, is_overseer), {})
 
 	fzf.fzf_exec(tbl, fzfopts)
 end

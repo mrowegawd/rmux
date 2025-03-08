@@ -14,7 +14,7 @@ end
 
 local function generator_select(Integs, tbl)
 	vim.validate({ tbl = { tbl, "table" } })
-	return Fzf.gen_select(Integs, tbl, title_formatter())
+	return Fzf.gen_select(Integs, tbl, title_formatter(), false)
 end
 
 function M.load_tasks_list(Integs)
@@ -40,6 +40,17 @@ function M.grep_err(Integs, cur_pane_id, target_panes, opts)
 	opts.title = title_formatter(opts.title)
 
 	Fzf.grep_err(opts)
+end
+
+function M.load_overseer(Integs)
+	local global_commands = vim.api.nvim_get_commands({})
+	local overseer_cmds = {}
+	for idx, _ in pairs(global_commands) do
+		if idx:find("Overseer*") then
+			overseer_cmds[#overseer_cmds + 1] = idx
+		end
+	end
+	return Fzf.gen_select(Integs, overseer_cmds, title_formatter("overseer"), true)
 end
 
 return M

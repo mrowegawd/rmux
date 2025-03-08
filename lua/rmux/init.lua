@@ -33,16 +33,14 @@ function M.status_panes_targeted()
 	local selected_panes = Config.settings.base.selected_panes
 
 	if selected_panes and #selected_panes > 0 then
-		local result = {}
+		local result = { watch = {}, run_with = capitalize_first_letter(Config.settings.base.run_with) }
 
 		for _, value in ipairs(selected_panes) do
-			table.insert(result, remove_percent(value))
+			table.insert(result.watch, remove_percent(value))
 		end
-
-		table.insert(result, " " .. capitalize_first_letter(Config.settings.base.run_with))
-		return table.concat(result, "|")
+		return result
 	end
-	return ""
+	return {}
 end
 
 --  ╭──────────────────────────────────────────────────────────╮

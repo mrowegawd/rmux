@@ -1,14 +1,26 @@
-return function(Integs, title_str)
+return function(Integs, title_str, is_overseer)
 	return {
 		["default"] = function(selected, _)
+			if is_overseer then
+				vim.cmd(selected[1])
+				return
+			end
 			Integs:generator_cmd_panes(selected[1])
 		end,
 		["ctrl-r"] = function()
+			if is_overseer then
+				vim.cmd("OverseerOpen")
+				return
+			end
 			Integs:watcher()
 		end,
 		["ctrl-o"] = function()
-			local global_commands = vim.api.nvim_get_commands({})
+			if is_overseer then
+				vim.cmd("OverseerOpen")
+				return
+			end
 
+			local global_commands = vim.api.nvim_get_commands({})
 			local overseer_cmds = {}
 			for idx, _ in pairs(global_commands) do
 				if string.match(idx, "Overseer") then
