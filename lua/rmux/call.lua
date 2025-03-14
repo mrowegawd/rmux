@@ -180,7 +180,12 @@ function M.command(opts, state_cmd)
 	}
 
 	if call_cmds[state_cmd] ~= nil then
-		return call_cmds[state_cmd]()
+		-- Prevent the user from editing or updating the current buffer temporarily by
+		-- disabling user input and entering command-line mode.
+		vim.api.nvim_input("<Cmd>")
+		call_cmds[state_cmd]()
+		-- Return to normal mode after the command is finished
+		vim.api.nvim_input("<Esc>")
 	else
 		Util.warn({ msg = string.format("Provider command '%s' not implemented yet", state_cmd), setnotif = true })
 	end

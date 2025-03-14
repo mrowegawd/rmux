@@ -39,12 +39,14 @@ function Integs:run_file(name_cmd, type_strategy)
 		end
 
 		Constant.set_insert_tbl_opened_panes(pane_id, pane_idx, name_cmd, builder, type_strategy)
+		vim.uv.sleep(100)
 
 		local refresh_pane = true
 		for _, task in pairs(tbl_opened_panes) do
 			if task.type_strategy == type_strategy then
 				if task.name == name_cmd then
 					self:run().send_pane_cmd(task, refresh_pane)
+					vim.uv.sleep(50)
 				end
 			end
 		end
@@ -78,12 +80,14 @@ function Integs:run_file(name_cmd, type_strategy)
 		end
 
 		Constant.set_insert_tbl_opened_panes(pane_id, pane_idx, name_cmd, builder, type_strategy)
+		vim.uv.sleep(100)
 
 		local refresh_pane = true
 		for _, task in pairs(tbl_opened_panes) do
 			if task.type_strategy == type_strategy then
 				if task.name == name_cmd then
 					self:run().send_pane_cmd(task, refresh_pane)
+					vim.uv.sleep(50)
 				end
 			end
 		end
@@ -188,6 +192,7 @@ function Integs:_respawn_pane(expand_pane)
 	else
 		self:run().create_new_pane(cwd, true)
 	end
+	vim.uv.sleep(50)
 end
 
 function Integs:send_line()
