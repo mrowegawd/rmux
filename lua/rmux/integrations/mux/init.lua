@@ -144,6 +144,15 @@ function M.check_right_pane_current_command()
 	)
 end
 
+function M.check_current_program_pane_name(msg)
+	vim.validate({ msg = { msg, "string" } })
+	return Util.normalize_return(
+		vim.fn.system(
+			[[tmux display -p "#{pane_id} #{pane_current_command}" | awk '$2 == "]] .. msg .. [[" { print $2; exit }']]
+		)
+	)
+end
+
 function M.check_right_pane_id()
 	M.go_right_pane()
 	return Util.normalize_return(vim.fn.system([[tmux display -p "#{pane_id}"]]))
@@ -163,6 +172,10 @@ end
 function M.go_left_pane()
 	vim.fn.system("tmux select-pane -L")
 end
+function M.go_down_pane()
+	vim.fn.system("tmux select-pane -D")
+end
+
 -- function M.go_last_pane()
 -- 	vim.fn.system("tmux last-pane")
 -- end
@@ -213,21 +226,37 @@ function M.create_new_pane(cwd, expand_pane)
 	cwd = cwd or vim.fn.getcwd()
 
 	local pane_id
+	local mode_open
+	local set_expand = false
 	if M.is_pane_at_bottom() and not expand_pane then
-		pane_id = Util.normalize_return(
-			vim.fn.system("tmux split-window -vl " .. size_pane .. " -c " .. cwd .. " | tmux display -p '#{pane_id}'")
-		)
+		mode_open = "-vl"
 	end
 
 	if expand_pane then
-		M.jump_to_last_pane()
-		pane_id = Util.normalize_return(
-			vim.fn.system("tmux split-window -hl " .. size_pane .. " -c " .. cwd .. " | tmux display -p '#{pane_id}'")
-		)
-		M.reset_resize_pane()
+		if M.is_pane_at_bottom() then
+			mode_open = "-vl"
+		else
+			M.jump_to_last_pane()
+			if M.check_current_program_pane_name("yazi") then
+				M.jump_to_last_pane()
+				M.go_down_pane()
+			end
+			mode_open = "-hl"
+			set_expand = true
+		end
 	end
 
+	pane_id = Util.normalize_return(
+		vim.fn.system(
+			"tmux split-window " .. mode_open .. " " .. size_pane .. " -c " .. cwd .. " | tmux display -p '#{pane_id}'"
+		)
+	)
+
 	vim.uv.sleep(50)
+
+	if M.is_pane_at_bottom() and set_expand then
+		M.reset_resize_pane()
+	end
 
 	if pane_id then
 		Constant.set_sendID(pane_id)
