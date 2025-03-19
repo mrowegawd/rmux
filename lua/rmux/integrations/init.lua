@@ -13,12 +13,7 @@ end
 
 function Integs:__jump_to_main_pane(main_pane_id)
 	vim.validate({ pane_id = { main_pane_id, "string" } })
-
-	-- local cur_pane_id = self:run().get_current_pane_id()
-	-- print("back to main pain? " .. cur_pane_id .. " " .. main_pane_id)
-	-- if main_pane_id ~= cur_pane_id then
 	self:run().jump_to_pane_id(main_pane_id)
-	-- end
 end
 
 function Integs:run_file(name_cmd, type_strategy)
@@ -87,7 +82,7 @@ function Integs:run_file(name_cmd, type_strategy)
 			if task.type_strategy == type_strategy then
 				if task.name == name_cmd then
 					self:run().send_pane_cmd(task, refresh_pane)
-					vim.uv.sleep(50)
+					vim.uv.sleep(100)
 				end
 			end
 		end
@@ -99,6 +94,7 @@ function Integs:run_file(name_cmd, type_strategy)
 	if _task.name == name_cmd then
 		local refresh_pane = true
 		self:run().send_pane_cmd(_task, refresh_pane)
+		vim.uv.sleep(100)
 		self:__jump_to_main_pane(cur_pane_id)
 	end
 end
@@ -192,7 +188,7 @@ function Integs:_respawn_pane(expand_pane)
 	else
 		self:run().create_new_pane(cwd, true)
 	end
-	vim.uv.sleep(50)
+	vim.uv.sleep(100)
 end
 
 function Integs:send_line()
