@@ -1,5 +1,6 @@
-local Config = require("rmux.config")
 local Call = require("rmux.call")
+local Config = require("rmux.config")
+local Constant = require("rmux.constant")
 local Util = require("rmux.utils")
 
 local M = {}
@@ -30,8 +31,11 @@ local function capitalize_first_letter(str)
 end
 
 function M.status_panes_targeted()
-	local selected_panes = Config.settings.base.selected_panes
+	if #Constant.get_tbl_opened_panes() == 0 then
+		return {}
+	end
 
+	local selected_panes = Constant.get_selected_pane()
 	if selected_panes and #selected_panes > 0 then
 		local result = { watch = {}, run_with = capitalize_first_letter(Config.settings.base.run_with) }
 

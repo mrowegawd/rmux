@@ -453,7 +453,6 @@ function M.grep_err_output_commands(current_pane, target_panes, opts)
 				command_str = command_str .. " | " .. grep_cmd .. " '" .. regex .. "' | tr -d ' '"
 			elseif type(regex) == "table" then
 				parse = Parser.new(regex)
-				print(vim.inspect(regex))
 			end
 
 			local contents = Util.get_os_command_output({

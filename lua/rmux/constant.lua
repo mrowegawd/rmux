@@ -4,11 +4,6 @@ local M = {}
 
 function M.insert_tbl_tasks(tbl_data_task)
 	vim.validate({ tbl_data_langs = { tbl_data_task, "table" } })
-
-	-- if #tbl_data_tasks == 0 then
-	-- 	Config.settings.tasks = {}
-	-- end
-
 	for _, tasks in pairs(tbl_data_task) do
 		table.insert(Config.settings.tasks, tasks)
 	end

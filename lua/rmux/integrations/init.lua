@@ -35,7 +35,9 @@ function Integs:run_file(name_cmd, type_strategy)
 		end
 
 		Constant.set_insert_tbl_opened_panes(pane_id, pane_idx, name_cmd, builder, type_strategy)
-		vim.uv.sleep(100)
+		os.execute("sleep 0.2")
+
+		Constant.set_selected_pane({ pane_id })
 
 		local refresh_pane = true
 		for _, task in pairs(tbl_opened_panes) do
@@ -330,7 +332,7 @@ function Integs:find_err()
 	local cur_pane_id = self:run().get_current_pane_id()
 
 	local selected_panes = Constant.get_selected_pane()
-	if selected_panes and #selected_panes > 0 then
+	if #selected_panes > 0 then
 		target_panes = selected_panes
 	else
 		for _, task in pairs(tbl_opened_panes) do
@@ -338,13 +340,16 @@ function Integs:find_err()
 				if target_panes[task.pane_id] ~= nil then
 					target_panes[#target_panes + 1] = task.pane_id
 				end
+			end
+		end
+	end
 
-				local pm = Problem_matcher.resolve_problem_matcher(task.builder.components[1].problem_matcher)
-				if pm then
-					local parser_defn = Problem_matcher.get_parser_from_problem_matcher(pm, {})
-					target_panes[#target_panes + 1] = task.pane_id
-					opts.regex = parser_defn
-				end
+	for _, task in pairs(tbl_opened_panes) do
+		if task.pane_id then
+			local pm = Problem_matcher.resolve_problem_matcher(task.builder.components[1].problem_matcher)
+			if pm then
+				local parser_defn = Problem_matcher.get_parser_from_problem_matcher(pm, {})
+				opts.regex = parser_defn
 			end
 		end
 	end
