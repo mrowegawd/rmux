@@ -151,11 +151,6 @@ end
 function M.grep_err(opts)
 	vim.validate({ opts = { opts, "table" } })
 
-	opts.num_history_lines = opts.num_history_lines or 10000
-	opts.grep_cmd = opts.grep_cmd or "grep -oP"
-	opts.regex = opts.regex or "(([.\\w\\-~\\$@]+)(\\/?[\\w\\-@]+)+\\/?)\\.([\\w]+)(:\\d*:\\d*)?"
-	opts.title = opts.title or "NOne"
-
 	local function format_results()
 		local items = {}
 		for i, _ in pairs(opts.results) do

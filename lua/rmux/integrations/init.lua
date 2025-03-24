@@ -2,6 +2,7 @@ local Config = require("rmux.config")
 local Constant = require("rmux.constant")
 local Util = require("rmux.utils")
 local Picker = require("rmux.picker")
+local Problem_matcher = require("overseer.template.vscode.problem_matcher")
 
 local Integs = {} -- Integs: integ
 
@@ -325,7 +326,7 @@ function Integs:find_err()
 	end
 
 	local target_panes = {}
-	local title_picker = "Grep Error "
+	local opts = { title = "Grep Error" }
 	local cur_pane_id = self:run().get_current_pane_id()
 
 	local selected_panes = Constant.get_selected_pane()
@@ -334,18 +335,26 @@ function Integs:find_err()
 	else
 		for _, task in pairs(tbl_opened_panes) do
 			if task.pane_id then
-				target_panes[#target_panes + 1] = task.pane_id
+				if target_panes[task.pane_id] ~= nil then
+					target_panes[#target_panes + 1] = task.pane_id
+				end
+
+				local pm = Problem_matcher.resolve_problem_matcher(task.builder.components[1].problem_matcher)
+				if pm then
+					local parser_defn = Problem_matcher.get_parser_from_problem_matcher(pm, {})
+					target_panes[#target_panes + 1] = task.pane_id
+					opts.regex = parser_defn
+				end
 			end
 		end
 	end
 
 	if #target_panes == 1 then
-		title_picker = title_picker .. "Pane " .. target_panes[1]
+		opts.title = opts.title .. " Pane " .. target_panes[1]
 	else
-		title_picker = title_picker .. "Panes [ " .. table.concat(target_panes, " ") .. " ]"
+		opts.title = opts.title .. " Panes [ " .. table.concat(target_panes, " ") .. " ]"
 	end
 
-	local opts = { title = title_picker }
 	Picker.grep_err(Integs.run(self), cur_pane_id, target_panes, opts)
 end
 

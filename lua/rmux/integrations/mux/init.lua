@@ -1,5 +1,6 @@
 local Constant = require("rmux.constant")
 local Path = require("plenary.path")
+local Parser = require("overseer.parser")
 local Util = require("rmux.utils")
 
 local size_pane = 19
@@ -431,7 +432,6 @@ function M.grep_err_output_commands(current_pane, target_panes, opts)
 	local panes = target_panes
 	local grep_cmd = opts.grep_cmd
 	local regex = opts.regex
-
 	local num_history_lines = opts.num_history_lines or 10000
 
 	local results = {}
@@ -446,35 +446,54 @@ function M.grep_err_output_commands(current_pane, target_panes, opts)
 				pane_id,
 				"#{pane_current_path}",
 			})[1] or ""
-			local command_str = "tmux capture-pane -p -t "
-				.. pane_id
-				.. " -S "
-				.. -num_history_lines
-				.. " | "
-				.. grep_cmd
-				.. " '"
-				.. regex
-				.. "' | tr -d ' '"
+
+			local parse
+			local command_str = "tmux capture-pane -p -t " .. pane_id .. " -S " .. -num_history_lines
+			if type(regex) == "string" then
+				command_str = command_str .. " | " .. grep_cmd .. " '" .. regex .. "' | tr -d ' '"
+			elseif type(regex) == "table" then
+				parse = Parser.new(regex)
+				print(vim.inspect(regex))
+			end
+
 			local contents = Util.get_os_command_output({
 				"sh",
 				"-c",
 				command_str,
 			})
+
 			if contents then
 				for _, line in ipairs(contents) do
 					-- parse path, line, col
-					local splits = {}
-					local i = 1
-					for part in string.gmatch(line, "[^:]+") do
-						splits[i] = part
-						i = i + 1
+					local lnum, cnum, pathx
+					if type(regex) == "table" then
+						parse:ingest({ line })
+						local get_result = parse:get_result()
+						for _, res in pairs(get_result) do
+							pathx = res.filename
+							lnum = res.lnum
+							cnum = res.col
+						end
+					else
+						local splits = {}
+						local i = 1
+						for part in string.gmatch(line, "[^:]+") do
+							splits[i] = part
+							i = i + 1
+						end
+
+						pathx = splits[1]
+						lnum = splits[2]
+						cnum = splits[3]
 					end
-					local path = Path:new(splits[1])
+
+					local path = Path:new(pathx)
 					if not path:is_absolute() then
 						path = Path:new(pane_path, path)
 					end
+
 					if path:is_file() then
-						local result = { path = path:normalize(), lnum = splits[2], cnum = splits[3] }
+						local result = { path = path:normalize(), lnum = lnum, cnum = cnum }
 						local key = result.path .. ":" .. (result.lnum or "") .. ":" .. (result.cnum or "")
 						if results[key] == nil then
 							results[key] = result
