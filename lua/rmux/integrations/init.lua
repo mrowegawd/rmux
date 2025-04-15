@@ -34,6 +34,11 @@ function Integs:run_file(name_cmd, type_strategy)
 			end
 		end
 
+		if cur_pane_id == pane_id then
+			Util.error({ msg = "Aborting: 'cur_pane_id' and 'pane_id' cannot have the same value.", setnotif = true })
+			return
+		end
+
 		Constant.set_insert_tbl_opened_panes(pane_id, pane_idx, name_cmd, builder, type_strategy)
 		os.execute("sleep 0.2")
 
@@ -304,20 +309,21 @@ end
 local augroupkill = "RmuxAutoKill"
 local is_set_autokill = false
 function Integs:set_au_autokill()
-	if Config.settings.base.auto_kill and not is_set_autokill then
-		-- Delete augroup if it already exists to prevent duplication
-		Integs:unset_augroup(augroupkill)
+	-- if Config.settings.base.auto_kill and not is_set_autokill then
+	-- Delete augroup if it already exists to prevent duplication
+	-- Integs:unset_augroup(augroupkill)
 
-		local augroup = vim.api.nvim_create_augroup(augroupkill, { clear = true })
-		vim.api.nvim_create_autocmd("ExitPre", {
-			pattern = "*",
-			group = augroup,
-			callback = function()
-				Integs:close_all_panes()
-			end,
-		})
-		is_set_autokill = true
-	end
+	local augroup = vim.api.nvim_create_augroup(augroupkill, { clear = true })
+	vim.api.nvim_create_autocmd("ExitPre", {
+		pattern = "*",
+		group = augroup,
+		callback = function()
+			Integs:close_all_panes()
+			vim.cmd([[echoerr "helo"]])
+		end,
+	})
+	is_set_autokill = true
+	-- end
 end
 
 function Integs:find_err()

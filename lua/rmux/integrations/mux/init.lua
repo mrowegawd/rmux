@@ -247,13 +247,8 @@ function M.create_new_pane(cwd, expand_pane)
 		end
 	end
 
-	pane_id = Util.normalize_return(
-		vim.fn.system(
-			"tmux split-window " .. mode_open .. " " .. size_pane .. " -c " .. cwd .. " | tmux display -p '#{pane_id}'"
-		)
-	)
-
-	vim.uv.sleep(50)
+	vim.fn.system("tmux split-window " .. mode_open .. " " .. size_pane .. " -c " .. cwd)
+	pane_id = Util.normalize_return(vim.fn.system("tmux display -p '#{pane_id}'"))
 
 	if M.is_pane_at_bottom() and set_expand then
 		M.reset_resize_pane()
