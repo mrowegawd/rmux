@@ -8,6 +8,7 @@ local default_settings = {
 		tbl_opened_panes = {},
 		run_with = "mux", -- tmux, wez, tt, toggleterm (tt.nvim)
 		auto_kill = true,
+		size_pane = 12,
 		rmuxpath = vim.fn.expand("~/.config/nvim/runmux"),
 	},
 	tasks = {},

@@ -61,6 +61,10 @@ function M.get_tasks()
 	return Config.settings.tasks
 end
 
+function M.get_size_pane()
+	return Config.settings.base.size_pane
+end
+
 function M.set_selected_pane(panes_id)
 	vim.validate({ panes_id = { panes_id, "table" } })
 	Config.settings.base.selected_panes = panes_id

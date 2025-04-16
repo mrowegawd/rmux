@@ -3,7 +3,7 @@ local Path = require("plenary.path")
 local Parser = require("overseer.parser")
 local Util = require("rmux.utils")
 
-local size_pane = 19
+local size_pane = Constant.get_size_pane()
 
 local M = {}
 function M.pane_iszoom()

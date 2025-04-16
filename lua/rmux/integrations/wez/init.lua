@@ -12,7 +12,7 @@ local wezterm_send = "wezterm cli "
 
 local current_pane_id
 
-local size_pane = 35
+local size_pane = Constant.get_size_pane()
 
 local function __respawn_pane()
 	local pane_right, is_pane_right = WezUtil.get_right_active_pane()
