@@ -18,9 +18,9 @@ local function h(name)
 end
 
 -- set hl-groups
-vim.api.nvim_set_hl(0, "RunmuxPromptTitle", { fg = h("Normal").bg, bg = h("Error").fg, italic = true, bold = true })
-vim.api.nvim_set_hl(0, "RunmuxIconTitle", { fg = h("Normal").bg, bg = h("Error").fg, italic = true, bold = true })
-vim.api.nvim_set_hl(0, "RunmuxNormal", { fg = h("Normal").bg, bg = h("Error").fg, italic = true, bold = true })
+vim.api.nvim_set_hl(0, "RunmuxPromptTitle", { fg = h("Normal").bg, bg = h("Normal").fg, italic = true, bold = true })
+vim.api.nvim_set_hl(0, "RunmuxIconTitle", { fg = h("Normal").bg, bg = h("Normal").fg, italic = true, bold = true })
+vim.api.nvim_set_hl(0, "RunmuxNormal", { fg = h("Normal").bg, bg = h("Normal").fg, italic = true, bold = true })
 function M.check_bottom_pane()
 	print(M.is_pane_at_bottom())
 end
