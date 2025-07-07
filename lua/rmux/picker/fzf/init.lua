@@ -87,7 +87,7 @@ function M.select_pane(Integs, opts)
 		end,
 	}
 	fzfopts.actions = vim.tbl_extend("keep", FzfMapTarget(Integs, opts), {})
-	fzfopts.fzf_opts = { ["--header"] = [[CTRL-x:delete-pane]] }
+	fzfopts.fzf_opts = { ["--header"] = [[^x:deletepane]] }
 	fzfopts.winopts = function()
 		return {
 			title = format_title(opts.title, " "),
@@ -107,7 +107,7 @@ end
 --
 -- 	local titleMsg = "Load rmux from storage"
 -- 	fzfopts.cwd = Config.settings.base.rmuxpath
--- 	fzfopts.fzf_opts = { ["--header"] = [[Ctrl-x:delete-json]] }
+-- 	fzfopts.fzf_opts = { ["--header"] = [[^x:deletejson]] }
 -- 	fzfopts.cmd = Term.create_finder_files()
 -- 	fzfopts.actions = vim.tbl_extend("keep", FzfMapPane.enter(), FzfMapPane.delete())
 -- 	fzfopts.winopts = function()
@@ -131,7 +131,7 @@ function M.gen_select(Integs, tbl, title, is_overseer)
 
 	local title_str = title:gsub("^%l", string.upper)
 
-	fzfopts.fzf_opts = { ["--header"] = [[CTRL-O:OverseerCommands  CTRL-R:Watch]] }
+	fzfopts.fzf_opts = { ["--header"] = [[^r:watch  ^o:overseercommands]] }
 	fzfopts.winopts = function()
 		return {
 			title = format_title(title_str, "󰑮"),
@@ -204,7 +204,7 @@ function M.grep_err(opts)
 			return GrepErrPreviewer
 		end,
 	}
-	fzfopts.fzf_opts = { ["--header"] = [[CTRL-V:open-vertical  CTRL-S:open-split  CTRL-T:open-in-tab]] }
+	fzfopts.fzf_opts = { ["--header"] = [[^v:opvert  ^s:opsplit  ^t:optab]] }
 	fzfopts.winopts = function()
 		return {
 			title = format_title(opts.title, " "),
