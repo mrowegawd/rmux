@@ -35,6 +35,7 @@ return function(Integs, title_str, is_overseer)
 					height = #overseer_cmds + 2,
 					col = 0.50,
 					row = 0.50,
+					fullscreen = false,
 					preview = { hidden = "hidden" },
 				},
 				actions = {

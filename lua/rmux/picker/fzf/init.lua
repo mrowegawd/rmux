@@ -42,7 +42,7 @@ local fzfopts = {
 	no_header_i = true,
 	winopts = {
 		-- hls = { normal = "Normal" },
-		border = "rounded",
+		-- border = "rounded",
 		height = 0.4,
 		width = 0.30,
 		row = 0.40,
@@ -95,7 +95,8 @@ function M.select_pane(Integs, opts)
 			height = 0.80,
 			col = 0.50,
 			row = 0.60,
-			preview = { horizontal = "right:50%", vertical = "down:50%" },
+			fullscreen = false,
+			preview = { horizontal = "right:40%", vertical = "down:60%" },
 		}
 	end
 
@@ -139,6 +140,7 @@ function M.gen_select(Integs, tbl, title, is_overseer)
 			height = #tbl + 4,
 			col = 0.50,
 			row = 0.50,
+			fullscreen = false,
 			preview = { hidden = "hidden" },
 		}
 	end
@@ -212,6 +214,7 @@ function M.grep_err(opts)
 			height = 0.80,
 			col = 0.50,
 			row = 0.60,
+			fullscreen = false,
 			preview = { horizontal = "right:50%", vertical = "down:50%" },
 		}
 	end

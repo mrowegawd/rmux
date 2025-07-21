@@ -217,7 +217,7 @@ function Integs:select_target_panes(is_watcher)
 	local pane_lists = self:run().get_lists_pane_id_opened()
 
 	if pane_lists and #pane_lists == 1 then
-		Util.info({
+		Util.warn({
 			msg = "Only one pane is open. No action taken.",
 			title = "RMUX",
 			setnotif = true,
@@ -307,12 +307,7 @@ function Integs:set_au_watcher()
 end
 
 local augroupkill = "RmuxAutoKill"
-local is_set_autokill = false
 function Integs:set_au_autokill()
-	-- if Config.settings.base.auto_kill and not is_set_autokill then
-	-- Delete augroup if it already exists to prevent duplication
-	-- Integs:unset_augroup(augroupkill)
-
 	local augroup = vim.api.nvim_create_augroup(augroupkill, { clear = true })
 	vim.api.nvim_create_autocmd("ExitPre", {
 		pattern = "*",
@@ -322,14 +317,12 @@ function Integs:set_au_autokill()
 			vim.cmd([[echoerr "helo"]])
 		end,
 	})
-	is_set_autokill = true
-	-- end
 end
 
 function Integs:find_err()
 	local tbl_opened_panes = Constant.get_tbl_opened_panes()
 	if #tbl_opened_panes == 0 then
-		Util.info({ msg = "No task running", setnotif = true })
+		Util.warn({ msg = "No task running", setnotif = true })
 		return
 	end
 
@@ -338,6 +331,11 @@ function Integs:find_err()
 	local cur_pane_id = self:run().get_current_pane_id()
 
 	local selected_panes = Constant.get_selected_pane()
+	if selected_panes == nil then
+		Util.warn({ msg = "Cannot find the targeted pane. You need to select a target pane first", setnotif = true })
+		return
+	end
+
 	if #selected_panes > 0 then
 		target_panes = selected_panes
 	else
