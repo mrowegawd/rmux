@@ -285,7 +285,7 @@ function Integs:set_au_watcher()
 		Integs:unset_augroup(augroup_name) -- avoid duplicate augroup
 
 		local augroup = vim.api.nvim_create_augroup(augroup_name, { clear = true })
-		vim.api.nvim_create_autocmd("BufWritePre", {
+		vim.api.nvim_create_autocmd("BufWritePost", {
 			pattern = "*",
 			group = augroup,
 			callback = function()
