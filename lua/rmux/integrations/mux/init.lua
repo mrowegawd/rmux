@@ -6,6 +6,7 @@ local Util = require("rmux.utils")
 local size_pane = Constant.get_size_pane()
 
 local M = {}
+
 function M.pane_iszoom()
 	return Util.normalize_return(vim.fn.system([[tmux display-message -p "#F"]])) == "*Z"
 end
@@ -46,10 +47,10 @@ function M.get_pane_id(pane_idx)
 	if tostring(pane_id):match("%%") then
 		return pane_id
 	elseif #pane_id == 0 then
-		Util.warn({ msg = "pane_idx (index pane) is nil, its not active anymore" })
+		Util.warn("pane_idx (index pane) is nil, its not active anymore")
 		return
 	else
-		Util.warn({ msg = "pane_id: " .. tostring(pane_id) .. " must contains with %" })
+		Util.warn("pane_id: " .. tostring(pane_id) .. " must contains with %")
 		return
 	end
 end
@@ -284,7 +285,7 @@ function M.send_pane_cmd(task, isnewline)
 	local cmd_msg = task.builder.cmd
 
 	if not M.pane_exists(pane_id) then
-		Util.warn({ msg = pane_id .. " pane not exist" })
+		Util.warn("pane id: " .. pane_id .. " not exist")
 		return
 	end
 
@@ -319,78 +320,158 @@ function M.send_interrupt()
 	M.send_pane_cmd(pane_id, M.sendCtrlC())
 end
 
-function M.send_line()
-	local send_pane = Constant.get_sendID()
-
-	local linenr = vim.api.nvim_win_get_cursor(0)[1]
-	vim.cmd("silent! " .. linenr .. "," .. linenr .. " :w  !tmux load-buffer -")
-	vim.fn.system("tmux paste-buffer -dpr -t " .. send_pane)
+local list_strip_empty_lines_beginning = function(lines)
+	local i = 1
+	while lines[i] == "" do
+		i = i + 1
+	end
+	return vim.list_slice(lines, i)
 end
 
-function M.send_range_line()
+local list_strip_empty_lines_ending = function(lines)
+	local i = #lines
+	while lines[i] == "" do
+		i = i - 1
+	end
+	return vim.list_slice(lines, 1, i)
+end
+local list_strip_empty_lines = function(lines)
+	return list_strip_empty_lines_ending(list_strip_empty_lines_beginning(lines))
+end
+
+function M.send(content, target_pane)
+	local split_content
+	local cmd_load_buffer
+
+	if type(content) == "table" then
+		split_content = list_strip_empty_lines(content)
+		cmd_load_buffer = { "sh", "-c", "echo '" .. table.concat(split_content, "\n") .. "' | tmux load-buffer -" }
+	elseif type(content) == "string" then
+		split_content = content
+		cmd_load_buffer = { "sh", "-c", "echo '" .. split_content .. "' | tmux load-buffer -" }
+	end
+
+	if #split_content == 0 then
+		-- tmux may not update the buffer with an empty string.
+		-- vim.fn.system("tmux set-buffer '\n'")
+		cmd_load_buffer = { "sh", "-c", "echo '\n' | tmux load-buffer -" }
+	end
+
+	vim.system(cmd_load_buffer)
+	vim.system({ "tmux", "paste-buffer", "-dpr", "-t", target_pane })
+end
+
+function M.send_line(target_pane)
 	local send_pane = Constant.get_sendID()
+	target_pane = target_pane or send_pane
 
-	if M.pane_iszoom() then
-		M.pane_toggle_zoom()
+	local line = vim.api.nvim_get_current_line()
+	M.send(line, target_pane)
+end
+
+local str_widthindex = function(s, index)
+	if index < 1 or #s < index then
+		-- return full range if index is out of range
+		return { 1, vim.api.nvim_strwidth(s) }
 	end
 
-	vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Esc>", false, true, true), "nx", false)
-
-	local b_line, b_col
-	local e_line, e_col
-
-	local mode = vim.fn.visualmode()
-
-	---@diagnostic disable-next-line: deprecated
-	b_line, b_col = unpack(vim.fn.getpos("'<"), 2, 3)
-	---@diagnostic disable-next-line: deprecated
-	e_line, e_col = unpack(vim.fn.getpos("'>"), 2, 3)
-
-	if e_line < b_line or (e_line == b_line and e_col < b_col) then
-		e_line, b_line = b_line, e_line
-		e_col, b_col = b_col, e_col
+	local ws, we, b = 0, 0, 1
+	while b <= #s and b <= index do
+		local ch = s:sub(b, b + vim.str_utf_end(s, b))
+		local wch = vim.api.nvim_strwidth(ch)
+		ws = we + 1
+		we = ws + wch - 1
+		b = b + vim.str_utf_end(s, b) + 1
 	end
 
-	local lines = vim.api.nvim_buf_get_lines(0, b_line - 1, e_line, false)
+	return { ws, we }
+end
 
+local str_wbyteindex = function(s, index)
+	if index < 1 or vim.api.nvim_strwidth(s) < index then
+		-- return full range if index is out of range
+		return { 1, #s }
+	end
+
+	local b, bs, be, w = 1, 0, 0, 0
+	while b <= #s and w < index do
+		bs = b
+		be = bs + vim.str_utf_end(s, bs)
+		local ch = s:sub(bs, be)
+		local wch = vim.api.nvim_strwidth(ch)
+		w = w + wch
+		b = be + 1
+	end
+
+	return { bs, be }
+end
+
+function M.send_range_line(target_pane)
+	local send_pane = Constant.get_sendID()
+	target_pane = target_pane or send_pane
+
+	local c_v = vim.api.nvim_replace_termcodes("<C-v>", true, true, true)
+	local modes = { "v", "V", c_v }
+	local mode = vim.fn.mode():sub(1, 1)
+	if not vim.tbl_contains(modes, mode) then
+		return {}
+	end
+
+	-- Get the start and end positions of the selection
+	local _, ls, cs = unpack(vim.fn.getpos("v"))
+	local _, le, ce = unpack(vim.fn.getpos("."))
+
+	-- Ensure start position is before end position
+	if ls > le or (ls == le and cs > ce) then
+		ls, le = le, ls
+		cs, ce = ce, cs
+	end
+
+	-- Get the lines in the selection
+	local lines = vim.api.nvim_buf_get_lines(0, ls - 1, le, false)
 	if #lines == 0 then
-		return
+		return {}
 	end
+	ce = math.min(ce, #lines[#lines])
 
-	-- trim white space
-	local i = 1
-	while i <= #lines do
-		if lines[i] == "" then
-			table.remove(lines, i)
-		else
-			i = i + 1
+	if mode == "v" or mode == "V" then
+		if mode == "v" then
+			if #lines == 1 then
+				return { string.sub(lines[1], cs, ce) }
+			end
+			lines[1] = string.sub(lines[1], cs)
+			lines[#lines] = string.sub(lines[#lines], 1, ce)
 		end
-	end
-
-	if mode == "\22" then
-		local b_offset = math.max(1, b_col) - 1
-		for ix, line in ipairs(lines) do
-			-- On a block, remove all preciding chars unless b_col is 0/negative
-			lines[ix] = vim.fn.strcharpart(line, b_offset, math.min(e_col, vim.fn.strwidth(line)))
-		end
-	elseif mode == "v" then
-		local last = #lines
-		local line_size = vim.fn.strwidth(lines[last])
-		local max_width = math.min(e_col, line_size)
-		if max_width < line_size then
-			-- If the selected width is smaller then total line, trim the excess
-			lines[last] = vim.fn.strcharpart(lines[last], 0, max_width)
-		end
-
-		if b_col > 1 then
-			-- on a normal visual selection, if the start column is not 1, trim the beginning part
-			lines[1] = vim.fn.strcharpart(lines[1], b_col - 1)
+	else
+		--  TODO: visual block: fix weird behavior when selection include end of line
+		local csw = math.min(str_widthindex(lines[1], cs)[1], str_widthindex(lines[#lines], ce)[1])
+		local cew = math.max(str_widthindex(lines[1], cs)[2], str_widthindex(lines[#lines], ce)[2])
+		for i, line in ipairs(lines) do
+			-- byte index for current line from width index
+			local csl = str_wbyteindex(line, csw)[1]
+			local cel = str_wbyteindex(line, cew)[2]
+			lines[i] = string.sub(line, csl, cel)
 		end
 	end
 
-	vim.cmd("silent " .. b_line .. "," .. e_line .. ":w  !tmux load-buffer -")
+	-- local mode = vim.api.nvim_get_mode().mode
+	--
+	-- if mode == "v" or mode == "vs" or mode == "s" then
+	--   -- Adjust the columns to get correct substring
+	--   lines[#lines] = string.sub(lines[#lines], 1, ce)
+	--   lines[1] = string.sub(lines[1], cs)
+	-- elseif vim.list_contains({ "CTRL-V", "\22", "CTRL-S" }, mode) then
+	--   -- Visual block mode
+	--   if ce < cs then
+	--     cs, ce = ce, cs
+	--   end
+	--   for i, line in ipairs(lines) do
+	--     lines[i] = string.sub(line, cs, ce)
+	--   end
+	-- end
+	-- V, S mode: no further processing needed
 
-	vim.fn.system("tmux paste-buffer -dpr -t " .. send_pane)
+	M.send(lines, target_pane)
 end
 
 function M.open_vertical_pane(pane_strategy, size)

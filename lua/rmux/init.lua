@@ -9,7 +9,7 @@ local error_message
 
 local function err_loadMsg()
 	if #Config.settings.tasks == nil then
-		Util.error({ msg = "table 'tasks' is empty" })
+		Util.error("table 'tasks' is empty")
 		return false
 	end
 
@@ -61,44 +61,44 @@ end
 local cmds = {
 	["RmuxRunFile"] = function()
 		if err_loadMsg() then
-			Call.command(Config.settings.sendID, Config.settings.provider_cmd.RUN_FILE)
+			Call.command(Config.settings.provider_cmd.RUN_FILE)
 		end
 	end,
 	--  ────────────────────────────────────────────────────────────
 	["RmuxSendline"] = function()
 		if err_loadMsg() then
-			Call.command(Config.settings.sendID, Config.settings.provider_cmd.RUN_SENDID)
+			Call.command(Config.settings.provider_cmd.RUN_SEND, true)
 		end
 	end,
-	["RmuxSendVisualSelection"] = function()
+	["RmuxSendlineV"] = function()
 		if err_loadMsg() then
-			Call.command(Config.settings.sendID, Config.settings.provider_cmd.RUN_VSENDID)
+			Call.command(Config.settings.provider_cmd.RUN_VSEND, true)
 		end
 	end,
 	["RmuxSelectTargetPane"] = function()
 		if err_loadMsg() then
-			Call.command(Config.settings.sendID, Config.settings.provider_cmd.RUN_TARGET_PANE)
+			Call.command(Config.settings.provider_cmd.RUN_TARGET_PANE)
 		end
 	end,
 	["RmuxGrepErr"] = function()
 		if err_loadMsg() then
-			Call.command({}, Config.settings.provider_cmd.RUN_GRAB_ERR)
+			Call.command(Config.settings.provider_cmd.RUN_GRAB_ERR)
 		end
 	end,
 	--  ────────────────────────────────────────────────────────────
 	["RmuxSendInterrupt"] = function()
 		if err_loadMsg() then
-			Call.command("interrupt_single", Config.settings.provider_cmd.RUN_INTERRUPT)
+			Call.command(Config.settings.provider_cmd.RUN_INTERRUPT)
 		end
 	end,
 	["RmuxSendInterruptAll"] = function()
 		if err_loadMsg() then
-			Call.command("interrupt_all", Config.settings.provider_cmd.RUN_INTERRUPT_ALL)
+			Call.command(Config.settings.provider_cmd.RUN_INTERRUPT_ALL)
 		end
 	end,
 	["RmuxKillAllPanes"] = function()
 		if err_loadMsg() then
-			Call.command("kill_all_panes", Config.settings.provider_cmd.RUN_KILL_ALL_PANES)
+			Call.command(Config.settings.provider_cmd.RUN_KILL_ALL_PANES)
 		end
 	end,
 	--  ────────────────────────────────────────────────────────────

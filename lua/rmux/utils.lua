@@ -93,7 +93,7 @@ end
 
 function M.get_os_command_output(cmd, cwd)
 	if type(cmd) ~= "table" then
-		M.warn({ msg = "cmd has to be a table", setnotif = true })
+		M.warn("cmd has to be a table")
 		return {}
 	end
 
@@ -146,35 +146,19 @@ end
 --  │                         LOGGING                          │
 --  ╰──────────────────────────────────────────────────────────╯
 
-function M.warn(opts)
-	vim.validate({
-		opts = { opts, "table" },
-	})
-
-	local notif = opts.setnotif or false
-	if notif then
-		vim.notify(opts.msg, vim.log.levels.WARN, { title = "RMUX" })
-	end
+function M.warn(msg)
+	vim.validate({ msg = { msg, "string" } })
+	vim.notify(msg, vim.log.levels.WARN, { title = "RMUX" })
 end
 
-function M.error(opts)
-	vim.validate({
-		opts = { opts, "table" },
-	})
-
-	local notif = opts.setnotif or false
-	if notif then
-		vim.notify(opts.msg, vim.log.levels.ERROR, { title = "RMUX" })
-	end
+function M.error(msg)
+	vim.validate({ msg = { msg, "string" } })
+	vim.notify(msg, vim.log.levels.ERROR, { title = "RMUX" })
 end
 
-function M.info(opts)
-	vim.validate({ opts = { opts, "table" } })
-
-	local notif = opts.setnotif or false
-	if notif then
-		vim.notify(opts.msg, vim.log.levels.INFO, { title = "RMUX" })
-	end
+function M.info(msg)
+	vim.validate({ msg = { msg, "string" } })
+	vim.notify(msg, vim.log.levels.INFO, { title = "RMUX" })
 end
 
 --  ╭──────────────────────────────────────────────────────────╮

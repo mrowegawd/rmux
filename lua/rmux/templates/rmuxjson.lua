@@ -39,10 +39,7 @@ local function check_keys_decode_data_json(json_decode_data)
 		local _invalid_keys = Util.remove_duplicate_tbl(invalidKeys)
 		local invalidKeysStr = table.concat(_invalid_keys, ", ")
 		local errorMsg = "The following keys .rmuxrc.json are missing or invalid: " .. invalidKeysStr
-		Util.error({
-			msg = errorMsg,
-			setnotif = true,
-		})
+		Util.error(errorMsg)
 		return false
 	end
 	return true

@@ -30,9 +30,9 @@ return function(Integs, opts)
 			if opts.is_watcher then
 				Constant.set_watcher_status(opts.is_watcher)
 				Integs:set_au_watcher()
-				Util.info({ msg = "Set watcher pane: " .. msg_selected_pane, setnotif = true })
+				Util.info("Set watcher pane: " .. msg_selected_pane)
 			else
-				Util.info({ msg = "Select pane: " .. msg_selected_pane, setnotif = true })
+				Util.info("Select pane: " .. msg_selected_pane)
 			end
 		end,
 		["ctrl-x"] = function(selected, _)

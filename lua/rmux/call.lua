@@ -14,7 +14,7 @@ local use_default_provider = false
 
 local function _run_grep_err()
 	if use_default_provider then
-		Util.warn({ msg = "Cannot process, currently using the default provider (overseer)", setnotif = true })
+		Util.warn("Cannot process, currently using the default provider (overseer)")
 		return
 	end
 	Integs:find_err()
@@ -52,7 +52,7 @@ end
 --
 local function _target_pane()
 	if use_default_provider then
-		Util.warn({ msg = "Cannot process, currently using the default provider (overseer)", setnotif = true })
+		Util.warn("Cannot process, currently using the default provider (overseer)")
 		return
 	end
 
@@ -114,25 +114,26 @@ end
 
 local tmpl = require("rmux.templates")
 
-local vscode = require("rmux.templates.vscode")
-local rmuxjson = require("rmux.templates.rmuxjson")
-local packagejson = require("rmux.templates.packagejson")
+function M.command(state_cmd, dont_set_taskrc)
+	dont_set_taskrc = dont_set_taskrc or false
 
-function M.command(opts, state_cmd)
-	local taskrc = tmpl:register()
-	taskrc:set_template({ vscode, rmuxjson, packagejson })
-	Config.settings.tasks = {}
+	if not dont_set_taskrc then
+		local taskrc = tmpl:register()
+		local vscode = require("rmux.templates.vscode")
+		local rmuxjson = require("rmux.templates.rmuxjson")
+		local packagejson = require("rmux.templates.packagejson")
+		taskrc:set_template({ vscode, rmuxjson, packagejson })
+		Config.settings.tasks = {}
 
-	if not taskrc:is_load() then
-		if not use_default_provider then
-			Util.info({
-				msg = "File `tasks.json` does not exist. using the default provider: overseer",
-				setnotif = true,
-			})
+		if taskrc:is_load() then
+			use_default_provider = false
+		else
+			use_default_provider = true
+
+			if not use_default_provider then
+				Util.info("File `tasks.json` does not exist. using the default provider: overseer")
+			end
 		end
-		use_default_provider = true
-	else
-		use_default_provider = false
 	end
 
 	assert(
@@ -147,15 +148,12 @@ function M.command(opts, state_cmd)
 		else
 			Config.settings.base.run_with = "wez"
 		end
-	elseif run_with == "mux" then
-		Config.settings.base.run_with = "mux"
-	elseif run_with == "wez" then
-		Config.settings.base.run_with = "wez"
+	else
+		Config.settings.base.run_with = run_with
 	end
 
 	Integs:set_au_autokill()
 
-	opts = opts or ""
 	local call_cmds = {
 		["run_file"] = _run_file,
 		-- ["run_tasks_all"] = _run_tasks_all,
@@ -183,11 +181,13 @@ function M.command(opts, state_cmd)
 		-- Prevent the user from editing or updating the current buffer temporarily by
 		-- disabling user input and entering command-line mode.
 		vim.api.nvim_input("<Cmd>")
+
 		call_cmds[state_cmd]()
+
 		-- Return to normal mode after the command is finished
 		vim.api.nvim_input("<Esc>")
 	else
-		Util.warn({ msg = string.format("Provider command '%s' not implemented yet", state_cmd), setnotif = true })
+		Util.warn(string.format("Provider command '%s' not implemented yet", state_cmd))
 	end
 end
 

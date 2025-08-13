@@ -391,7 +391,7 @@ function M.send_pane_cmd(task, isnewline)
 	local cmd_msg = task.builder.cmd
 
 	if not M.pane_exists(pane_id) then
-		Util.warn({ msg = pane_id .. " pane not exist" })
+		Util.warn("pane id: " .. pane_id .. " pane not exist")
 		return
 	end
 
@@ -504,7 +504,7 @@ function M.open_multi_panes(layouts, state_cmd)
 				-- layouts_idx.regex
 			)
 		else
-			Util.warn({ msg = "Why did this happen?\n- There is no file .rmuxrc.json", setnotif = true })
+			Util.warn("Why did this happen?\n- There is no file .rmuxrc.json")
 		end
 	end
 

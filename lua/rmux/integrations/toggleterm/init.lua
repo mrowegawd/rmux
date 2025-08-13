@@ -130,7 +130,7 @@ function M.open_multi_panes(layouts, state_cmd)
 				layouts_idx.regex
 			)
 		else
-			Util.warn({ msg = "Why did this happen?\n- There is no file .rmuxrc.json", setnotif = true })
+			Util.warn("Why did this happen?\n- There is no file .rmuxrc.json")
 		end
 	end
 
@@ -160,10 +160,7 @@ end
 
 function M.grep_string_pane()
 	if Constant.get_sendID() == "" then
-		Util.warn({
-			msg = "pane or buffer is, are not active, abort it",
-			setnotif = true,
-		})
+		Util.warn("pane or buffer is, are not active, abort it")
 		return
 	end
 

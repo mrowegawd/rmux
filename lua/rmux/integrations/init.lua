@@ -35,7 +35,7 @@ function Integs:run_file(name_cmd, type_strategy)
 		end
 
 		if cur_pane_id == pane_id then
-			Util.error({ msg = "Aborting: 'cur_pane_id' and 'pane_id' cannot have the same value.", setnotif = true })
+			Util.error("Aborting: 'cur_pane_id' and 'pane_id' cannot have the same value.")
 			return
 		end
 
@@ -200,13 +200,21 @@ function Integs:_respawn_pane(expand_pane)
 end
 
 function Integs:send_line()
-	self:_respawn_pane()
-	self:run().send_line()
+	local selected_panes = Constant.get_selected_pane()
+	if not selected_panes then
+		Integs:select_target_panes()
+		return
+	end
+	self:run().send_line(selected_panes[1])
 end
 
 function Integs:send_line_range()
-	self:_respawn_pane()
-	self:run().send_range_line()
+	local selected_panes = Constant.get_selected_pane()
+	if not selected_panes then
+		Integs:select_target_panes()
+		return
+	end
+	self:run().send_range_line(selected_panes[1])
 end
 
 function Integs:select_target_panes(is_watcher)
@@ -217,11 +225,7 @@ function Integs:select_target_panes(is_watcher)
 	local pane_lists = self:run().get_lists_pane_id_opened()
 
 	if pane_lists and #pane_lists == 1 then
-		Util.warn({
-			msg = "Only one pane is open. No action taken.",
-			title = "RMUX",
-			setnotif = true,
-		})
+		Util.warn("Only one pane is open. No action taken")
 		return
 	end
 
@@ -322,7 +326,7 @@ end
 function Integs:find_err()
 	local tbl_opened_panes = Constant.get_tbl_opened_panes()
 	if #tbl_opened_panes == 0 then
-		Util.warn({ msg = "No task running", setnotif = true })
+		Util.warn("No task running")
 		return
 	end
 
@@ -332,7 +336,7 @@ function Integs:find_err()
 
 	local selected_panes = Constant.get_selected_pane()
 	if selected_panes == nil then
-		Util.warn({ msg = "Cannot find the targeted pane. You need to select a target pane first", setnotif = true })
+		Util.warn("Cannot find the targeted pane. You need to select a target pane first")
 		return
 	end
 

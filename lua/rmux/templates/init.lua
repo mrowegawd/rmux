@@ -7,34 +7,24 @@ function Tmpl:register()
 	return user
 end
 
-function Tmpl:set_template(file_rcs)
-	vim.validate({
-		file_rcs = { file_rcs, "table" },
-	})
-	self.tbl_filerc = file_rcs
+function Tmpl:set_template(tbl_providers)
+	vim.validate({ tbl_providers = { tbl_providers, "table" } })
+	self.tbl_template_providers = tbl_providers
 end
 
 function Tmpl:is_load()
-	local is_filerc_exists = {}
-	if self.tbl_filerc then
-		for _, x in pairs(self.tbl_filerc) do
-			if type(x) == "table" then
-				if x:load() then
-					table.insert(is_filerc_exists, true)
-				else
-					table.insert(is_filerc_exists, false)
+	local is_filerc_exists = false
+	if self.tbl_template_providers then
+		for _, template in pairs(self.tbl_template_providers) do
+			if type(template) == "table" then
+				if template:load() then
+					is_filerc_exists = true
 				end
 			end
 		end
 	end
 
-	for i = 1, #is_filerc_exists do
-		if is_filerc_exists[i] then
-			return true
-		end
-	end
-
-	return false
+	return is_filerc_exists
 end
 
 return Tmpl
