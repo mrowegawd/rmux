@@ -85,6 +85,14 @@ function M.get_watcher_status()
 	return Config.settings.base.is_watcher
 end
 
+function M.open_qf()
+	return Config.settings.base.quickfix.copen
+end
+
+function M.open_loc()
+	return Config.settings.base.quickfix.lopen
+end
+
 ---------------------
 function M.find_state_cmd_on_tbl_opened_panes(state_cmd)
 	-- assert(#Config.settings.base.tbl_opened_panes > 0, "get_tbl_opened_panes must greater than zero")

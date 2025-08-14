@@ -1,5 +1,9 @@
 local M = {}
 
+local function get_option(name_opt)
+	return vim.api.nvim_get_option_value(name_opt, { scope = "local" })
+end
+
 local nbsp = "\xe2\x80\x82" -- "\u{2002}"
 
 local function __lastIndexOf(haystack, needle)
@@ -34,10 +38,6 @@ function M.__strip_str(selected)
 		return
 	end
 	return __stripBeforeLastOccurrenceOf(pth, nbsp)
-end
-
-local function get_option(name_opt)
-	return vim.api.nvim_get_option_value(name_opt, { scope = "local" })
 end
 
 function M.get_col_row()

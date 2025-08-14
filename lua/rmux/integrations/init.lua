@@ -4,6 +4,10 @@ local Util = require("rmux.utils")
 local Picker = require("rmux.picker")
 local Problem_matcher = require("overseer.template.vscode.problem_matcher")
 
+local is_not_run_overseer = function()
+	return not vim.tbl_contains(Config.settings.run_support_with, Config.settings.base.run_with)
+end
+
 local Integs = {} -- Integs: integ
 
 Integs.__index = Integs
@@ -335,8 +339,8 @@ function Integs:find_err()
 	local cur_pane_id = self:run().get_current_pane_id()
 
 	local selected_panes = Constant.get_selected_pane()
-	if selected_panes == nil then
-		Util.warn("Cannot find the targeted pane. You need to select a target pane first")
+	if not selected_panes then
+		Integs:select_target_panes()
 		return
 	end
 
@@ -368,7 +372,9 @@ function Integs:find_err()
 		opts.title = opts.title .. " Panes [ " .. table.concat(target_panes, " ") .. " ]"
 	end
 
-	Picker.grep_err(Integs.run(self), cur_pane_id, target_panes, opts)
+	local is_overseer = is_not_run_overseer()
+
+	Picker.grep_err(Integs, Integs.run(self), cur_pane_id, target_panes, opts, is_overseer)
 end
 
 function Integs:kill_pane(pane_id)

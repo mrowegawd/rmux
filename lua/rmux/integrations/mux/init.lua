@@ -1,6 +1,5 @@
 local Constant = require("rmux.constant")
 local Path = require("plenary.path")
-local Parser = require("overseer.parser")
 local Util = require("rmux.utils")
 
 local size_pane = Constant.get_size_pane()
@@ -320,31 +319,12 @@ function M.send_interrupt()
 	M.send_pane_cmd(pane_id, M.sendCtrlC())
 end
 
-local list_strip_empty_lines_beginning = function(lines)
-	local i = 1
-	while lines[i] == "" do
-		i = i + 1
-	end
-	return vim.list_slice(lines, i)
-end
-
-local list_strip_empty_lines_ending = function(lines)
-	local i = #lines
-	while lines[i] == "" do
-		i = i - 1
-	end
-	return vim.list_slice(lines, 1, i)
-end
-local list_strip_empty_lines = function(lines)
-	return list_strip_empty_lines_ending(list_strip_empty_lines_beginning(lines))
-end
-
 function M.send(content, target_pane)
 	local split_content
 	local cmd_load_buffer
 
 	if type(content) == "table" then
-		split_content = list_strip_empty_lines(content)
+		split_content = Util.list_strip_empty_lines(content)
 		cmd_load_buffer = { "sh", "-c", "echo '" .. table.concat(split_content, "\n") .. "' | tmux load-buffer -" }
 	elseif type(content) == "string" then
 		split_content = content
@@ -528,6 +508,7 @@ function M.grep_err_output_commands(current_pane, target_panes, opts)
 			if type(regex) == "string" then
 				command_str = command_str .. " | " .. grep_cmd .. " '" .. regex .. "' | tr -d ' '"
 			elseif type(regex) == "table" then
+				local Parser = require("overseer.parser")
 				parse = Parser.new(regex)
 			end
 
@@ -540,14 +521,15 @@ function M.grep_err_output_commands(current_pane, target_panes, opts)
 			if contents then
 				for _, line in ipairs(contents) do
 					-- parse path, line, col
-					local lnum, cnum, pathx
+					local lnum, cnum, pathx, text
 					if type(regex) == "table" then
 						parse:ingest({ line })
 						local get_result = parse:get_result()
 						for _, res in pairs(get_result) do
 							pathx = res.filename
-							lnum = res.lnum
-							cnum = res.col
+							lnum = res.lnum or 0
+							cnum = res.col or 0
+							text = res.text
 						end
 					else
 						local splits = {}
@@ -568,7 +550,7 @@ function M.grep_err_output_commands(current_pane, target_panes, opts)
 					end
 
 					if path:is_file() then
-						local result = { path = path:normalize(), lnum = lnum, cnum = cnum }
+						local result = { path = path:normalize(), lnum = lnum, cnum = cnum, text = text }
 						local key = result.path .. ":" .. (result.lnum or "") .. ":" .. (result.cnum or "")
 						if results[key] == nil then
 							results[key] = result

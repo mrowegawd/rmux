@@ -10,6 +10,10 @@ local default_settings = {
 		auto_kill = true,
 		size_pane = 12,
 		rmuxpath = vim.fn.expand("~/.config/nvim/runmux"),
+		quickfix = {
+			copen = "belowright copen",
+			lopen = "belowright lopen",
+		},
 	},
 	tasks = {},
 }

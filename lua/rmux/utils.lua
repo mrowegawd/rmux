@@ -110,6 +110,51 @@ function M.get_os_command_output(cmd, cwd)
 	return stdout, ret, stderr
 end
 
+function M.list_strip_empty_lines_beginning(lines)
+	local i = 1
+	while lines[i] == "" do
+		i = i + 1
+	end
+	return vim.list_slice(lines, i)
+end
+
+function M.list_strip_empty_lines_ending(lines)
+	local i = #lines
+	while lines[i] == "" do
+		i = i - 1
+	end
+	return vim.list_slice(lines, 1, i)
+end
+
+function M.list_strip_empty_lines(lines)
+	return M.list_strip_empty_lines_ending(M.list_strip_empty_lines_beginning(lines))
+end
+
+function M.lstrip_whitespace(str, limit)
+	if limit ~= nil then
+		local num_found = 0
+		while num_found < limit do
+			str = string.gsub(str, "^%s", "")
+			num_found = num_found + 1
+		end
+	else
+		str = string.gsub(str, "^%s+", "")
+	end
+	return str
+end
+
+local rstrip_whitespace = function(str)
+	str = string.gsub(str, "%s+$", "")
+	return str
+end
+
+function M.strip_whitespace(str)
+	if str then
+		return rstrip_whitespace(M.lstrip_whitespace(str))
+	end
+	return ""
+end
+
 --  ╭──────────────────────────────────────────────────────────╮
 --  │                        FILE UTILS                        │
 --  ╰──────────────────────────────────────────────────────────╯
@@ -126,9 +171,11 @@ end
 function M.is_file(filename)
 	return M.exists(filename) == "file"
 end
+
 function M.jsonEncode(tbl)
 	return vim.fn.json_encode(tbl)
 end
+
 function M.jsonDecode(tbl)
 	return vim.fn.json_decode(tbl)
 end

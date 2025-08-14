@@ -22,7 +22,7 @@ end
 
 local function _run_file()
 	if use_default_provider then
-		Picker.load_overseer(Integs)
+		Picker.load_overseer(Integs, true)
 		return
 	end
 	Picker.load_tasks_list(Integs)
