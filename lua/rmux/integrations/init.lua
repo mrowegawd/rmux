@@ -8,6 +8,17 @@ local is_not_run_overseer = function()
 	return not vim.tbl_contains(Config.settings.run_support_with, Config.settings.base.run_with)
 end
 
+local loop_panes = function(func)
+	local panes = Constant.get_tbl_opened_panes()
+	if #panes > 0 then
+		for _, pane in pairs(panes) do
+			vim.schedule(function()
+				func(pane)
+			end)
+		end
+	end
+end
+
 local Integs = {} -- Integs: integ
 
 Integs.__index = Integs
@@ -24,6 +35,8 @@ end
 function Integs:run_file(name_cmd, type_strategy)
 	local cur_pane_id = self:run().get_current_pane_id()
 	local tbl_opened_panes = Constant.get_tbl_opened_panes()
+
+	local is_clear_sceen = true
 
 	if #tbl_opened_panes == 0 and (self:run().get_total_active_panes() == 1) then
 		self:_respawn_pane()
@@ -48,11 +61,10 @@ function Integs:run_file(name_cmd, type_strategy)
 
 		Constant.set_selected_pane({ pane_id })
 
-		local refresh_pane = true
 		for _, task in pairs(tbl_opened_panes) do
 			if task.type_strategy == type_strategy then
 				if task.name == name_cmd then
-					self:run().send_pane_cmd(task, refresh_pane)
+					self:run().send_pane_cmd(task, is_clear_sceen)
 					vim.uv.sleep(50)
 				end
 			end
@@ -89,11 +101,10 @@ function Integs:run_file(name_cmd, type_strategy)
 		Constant.set_insert_tbl_opened_panes(pane_id, pane_idx, name_cmd, builder, type_strategy)
 		vim.uv.sleep(100)
 
-		local refresh_pane = true
 		for _, task in pairs(tbl_opened_panes) do
 			if task.type_strategy == type_strategy then
 				if task.name == name_cmd then
-					self:run().send_pane_cmd(task, refresh_pane)
+					self:run().send_pane_cmd(task, is_clear_sceen)
 					vim.uv.sleep(100)
 				end
 			end
@@ -104,8 +115,7 @@ function Integs:run_file(name_cmd, type_strategy)
 	end
 
 	if _task.name == name_cmd then
-		local refresh_pane = true
-		self:run().send_pane_cmd(_task, refresh_pane)
+		self:run().send_pane_cmd(_task, is_clear_sceen)
 		vim.uv.sleep(100)
 		self:__jump_to_main_pane(cur_pane_id)
 	end
@@ -146,18 +156,13 @@ function Integs:run_all(list_tasks, type_strategy)
 	self:run().reset_resize_pane(cur_pane_id)
 	self:run().jump_to_pane_id(cur_pane_id)
 
-	local tbl_opened_panes = Constant.get_tbl_opened_panes()
-	if #tbl_opened_panes > 0 then
-		for _, task in pairs(tbl_opened_panes) do
-			if task.type_strategy == type_strategy then
-				local refresh_pane = true
-
-				self:run().send_pane_cmd(task, refresh_pane)
-			end
+	loop_panes(function(pane)
+		if pane.type_strategy == type_strategy then
+			local is_clear_sceen = true
+			self:run().send_pane_cmd(pane, is_clear_sceen)
+			self:run().jump_to_pane_id(cur_pane_id)
 		end
-
-		self:run().jump_to_pane_id(cur_pane_id)
-	end
+	end)
 end
 
 function Integs:generator_cmd_panes(name_cmd)
@@ -275,7 +280,19 @@ function Integs:send_cmd() -- pengganti openREPL
 end
 
 function Integs:send_signal_interrupt()
-	self:run().send_interrupt()
+	local selected_panes = Constant.get_selected_pane()
+	if not selected_panes then
+		Integs:select_target_panes()
+		return
+	end
+
+	self:run().send_interrupt(selected_panes[1])
+end
+
+function Integs:send_signal_interrupt_all()
+	loop_panes(function(pane)
+		self:run().send_interrupt(pane.pane_id)
+	end)
 end
 
 function Integs:watcher()
@@ -301,7 +318,7 @@ function Integs:set_au_watcher()
 				local tbl_opened_panes = Constant.get_tbl_opened_panes()
 
 				for _, pane_id in pairs(selected_panes) do
-					if self:run().pane_exists(pane_id) then
+					if self:run().is_pane_exists(pane_id) then
 						for _, task in pairs(tbl_opened_panes) do
 							if task.pane_id == pane_id then
 								self:run_file(task.name, "shell")
@@ -391,14 +408,9 @@ function Integs:close_all_panes()
 		return
 	end
 
-	local panes = Constant.get_tbl_opened_panes()
-	if #panes > 0 then
-		for _, pane in pairs(panes) do
-			vim.schedule(function()
-				self:run().kill_pane(pane.pane_id)
-			end)
-		end
-	end
+	loop_panes(function(pane)
+		self:run().kill_pane(pane.pane_id)
+	end)
 
 	Config.settings.base.tbl_opened_panes = {}
 end

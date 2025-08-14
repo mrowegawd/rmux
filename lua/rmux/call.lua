@@ -12,7 +12,7 @@ local use_default_provider = false
 -- 	Integs:open_all_panes()
 -- end
 
-local function _run_grep_err()
+function M.grep_err()
 	if use_default_provider then
 		Util.warn("Cannot process, currently using the default provider (overseer)")
 		return
@@ -20,7 +20,7 @@ local function _run_grep_err()
 	Integs:find_err()
 end
 
-local function _run_file()
+function M.run_file()
 	if use_default_provider then
 		Picker.load_overseer(Integs, true)
 		return
@@ -28,29 +28,27 @@ local function _run_file()
 	Picker.load_tasks_list(Integs)
 end
 
-local function _open_repl()
-	Integs:send_cmd()
-end
-
-local function _send_line()
+function M.send_line()
 	Integs:send_line()
 end
 
-local function _send_visual()
+function M.send_vline()
 	Integs:send_line_range()
 end
 
---  ────────────────────────────────────────────────────────────
-
-local function _Xsend_interrupt()
+function M.send_interrupt()
 	Integs:send_signal_interrupt()
 end
 
--- local function _Xsend_interrupt_all()
--- 	require("rmux.integrations." .. Config.settings.base.run_with).send_interrupt(true)
--- end
---
-local function _target_pane()
+function M.show_config()
+	print(vim.inspect(Config.settings))
+end
+
+function M.send_interrupt_all()
+	Integs:send_signal_interrupt_all()
+end
+
+function M.target_pane()
 	if use_default_provider then
 		Util.warn("Cannot process, currently using the default provider (overseer)")
 		return
@@ -59,48 +57,46 @@ local function _target_pane()
 	Integs:select_target_panes()
 end
 
--- local function _Xedit_or_reload_config(isEdit, isFzf)
--- 	isEdit = isEdit or false
--- 	isFzf = isFzf or false
---
--- 	local file_rc = Config.settings.base.fullpath .. "/" .. Config.settings.base.file_rc
---
--- 	if not Util.exists(file_rc) then
--- 		if Config.settings.base.rmuxpath ~= nil and #Config.settings.base.rmuxpath > 0 then
--- 			Fzf.select_rmuxfile()
--- 		else
--- 			Util.info({
--- 				msg = "File " .. Config.settings.base.file_rc .. " is not exists\nlemme create that for you",
--- 				setnotif = true,
--- 			})
---
--- 			for _, value in pairs(vim.api.nvim_list_runtime_paths()) do
--- 				if value:match("runmux") then
--- 					file_rc = value .. "/lua/rmux/fts/base.json"
--- 				end
--- 			end
--- 			vim.cmd("e " .. Config.settings.base.file_rc)
--- 			vim.cmd("0r! cat " .. file_rc)
--- 			vim.cmd("0")
--- 		end
---
--- 		return
--- 	end
---
--- 	if isEdit then
--- 		if isFzf and Config.settings.base.rmuxpath ~= nil and #Config.settings.base.rmuxpath > 0 then
--- 			Fzf.select_rmuxfile()
--- 		else
--- 			vim.cmd("e " .. file_rc)
--- 		end
--- 	end
--- end
---
--- local function Xredit_config()
--- 	_Xedit_or_reload_config(true, true)
--- end
+function M.edit_config(isEdit, isFzf)
+	isEdit = isEdit or false
+	isFzf = isFzf or false
 
-function _Xkill_all_panes()
+	local run_with = Config.settings.base.run_with
+	local file_rc = Config.settings.base.fullpath .. "/" .. Config.settings.base.file_rc
+
+	if vim.tbl_contains({ "mux", "wez" }, run_with) then
+		file_rc = ".vscode/tasks.json"
+	end
+
+	if not Util.exists(file_rc) then
+		-- if Config.settings.base.rmuxpath ~= nil and #Config.settings.base.rmuxpath > 0 then
+		Util.warn("Provider '" .. run_with .. "' used, but .vscode/tasks.json not found")
+		-- Fzf.select_rmuxfile()
+		-- else
+		-- 	Util.info({
+		-- 		msg = "File " .. Config.settings.base.file_rc .. " is not exists\nlemme create that for you",
+		-- 		setnotif = true,
+		-- 	})
+		--
+		-- 	for _, value in pairs(vim.api.nvim_list_runtime_paths()) do
+		-- 		if value:match("runmux") then
+		-- 			file_rc = value .. "/lua/rmux/fts/base.json"
+		-- 		end
+		-- 	end
+		-- 	vim.cmd("e " .. Config.settings.base.file_rc)
+		-- 	vim.cmd("0r! cat " .. file_rc)
+		-- 	vim.cmd("0")
+		return
+	end
+
+	vim.cmd("vsp " .. file_rc)
+end
+
+function M.redit_config()
+	Util.warn("not implemented yet")
+end
+
+function M.kill_all_panes()
 	if use_default_provider then
 		vim.cmd.OverseerToggle()
 		return
@@ -141,6 +137,9 @@ function M.command(state_cmd, dont_set_taskrc)
 		"Supported commands (`run_with`): " .. table.concat(Config.settings.run_support_with, ", ")
 	)
 
+	-- Util.info(state_cmd)
+	-- Util.info(Config.settings.provider_cmd[state_cmd])
+
 	local run_with = Config.settings.base.run_with
 	if run_with == "auto" then
 		if os.getenv("TMUX") then
@@ -154,41 +153,31 @@ function M.command(state_cmd, dont_set_taskrc)
 
 	Integs:set_au_autokill()
 
-	local call_cmds = {
-		["run_file"] = _run_file,
-		-- ["run_tasks_all"] = _run_tasks_all,
-		["run_grep_err"] = _run_grep_err,
-
-		["run_openrepl"] = _open_repl,
-
-		["run_sendline"] = _send_line,
-		["run_vsendline"] = _send_visual,
-
-		["run_target_pane"] = _target_pane,
-
-		["interrupt_single"] = _Xsend_interrupt,
-		-- ["interrupt_all"] = _Xsend_interrupt_all,
-
-		-- ["clear_all_pane_screen"] = _Xkill_all_panes,
-		--
-		-- ["edit_or_reload_config"] = _Xedit_or_reload_config,
-		-- ["redit_config"] = Xredit_config,
-
-		["kill_all_panes"] = _Xkill_all_panes,
-	}
-
-	if call_cmds[state_cmd] ~= nil then
-		-- Prevent the user from editing or updating the current buffer temporarily by
-		-- disabling user input and entering command-line mode.
-		vim.api.nvim_input("<Cmd>")
-
-		call_cmds[state_cmd]()
-
-		-- Return to normal mode after the command is finished
-		vim.api.nvim_input("<Esc>")
-	else
-		Util.warn(string.format("Provider command '%s' not implemented yet", state_cmd))
+	local function _cmd()
+		local cmd
+		for _, provider_cmd in pairs(Config.settings.provider_cmd) do
+			if state_cmd == provider_cmd then
+				cmd = provider_cmd
+			end
+		end
+		return cmd
 	end
+
+	local call = M[_cmd()]
+
+	if call == nil then
+		Util.error("Invalid '" .. tostring(state_cmd) .. "' API provider cmd!")
+		return
+	end
+
+	-- Prevent the user from editing or updating the current buffer temporarily by
+	-- disabling user input and entering command-line mode.
+	vim.api.nvim_input("<Cmd>")
+
+	call()
+
+	-- Return to normal mode after the command is finished
+	vim.api.nvim_input("<Esc>")
 end
 
 return M

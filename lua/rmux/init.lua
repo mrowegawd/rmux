@@ -103,15 +103,13 @@ local cmds = {
 	end,
 	--  ────────────────────────────────────────────────────────────
 	["RmuxSHOWConfig"] = function()
-		print(vim.inspect(Config.settings))
-		-- print(vim.inspect(Config.settings.base.tbl_opened_panes))
-		-- print(vim.inspect(Config.settings.sendID))
+		Call.command(Config.settings.provider_cmd.RUN_SHOW_CONFIG)
 	end,
 	["RmuxEDITConfig"] = function()
-		Call.command(true, "edit_or_reload_config")
+		Call.command(Config.settings.provider_cmd.RUN_EDIT_CONFIG)
 	end,
 	["RmuxREDITConfig"] = function()
-		Call.command(false, "redit_config")
+		Call.command(Config.settings.provider_cmd.RUN_REDIT_CONFIG)
 	end,
 }
 

@@ -36,15 +36,17 @@ function M.update_settings(opts)
 		RUN_FILE = "run_file",
 		RUN_KILL_ALL_PANES = "kill_all_panes",
 
-		RUN_SEND = "run_sendline",
-		RUN_VSEND = "run_vsendline",
+		RUN_SEND = "send_line",
+		RUN_VSEND = "send_vline",
+		RUN_INTERRUPT = "send_interrupt",
+		RUN_INTERRUPT_ALL = "send_interrupt_all",
 
-		RUN_INTERRUPT = "interrupt_single", -- default nya harus false, jangan diubah menjadi true
-		RUN_INTERRUPT_ALL = "interrupt_all",
+		RUN_GRAB_ERR = "grep_err",
+		RUN_TARGET_PANE = "target_pane",
 
-		RUN_GRAB_ERR = "run_grep_err",
-
-		RUN_TARGET_PANE = "run_target_pane",
+		RUN_EDIT_CONFIG = "edit_config",
+		RUN_REDIT_CONFIG = "redit_config",
+		RUN_SHOW_CONFIG = "show_config",
 	}
 
 	return M.settings

@@ -4,6 +4,14 @@ local Util = require("rmux.utils")
 
 local size_pane = Constant.get_size_pane()
 
+local function __cmd_ctrl_c()
+	return "^C"
+end
+
+local function __cmd_clear_screen()
+	return "clear"
+end
+
 local M = {}
 
 function M.pane_iszoom()
@@ -30,7 +38,7 @@ function M.cmd_str_capture_pane(pane_id, num_history_lines)
 	return { "tmux", "capture-pane", "-p", "-t", pane_id, "-S", -num_history_lines, "-e" }
 end
 
-function M.pane_exists(pane_id)
+function M.is_pane_exists(pane_id)
 	vim.validate({ pane_id = { pane_id, "string" } })
 	local result = (Util.normalize_return(vim.fn.system("tmux display -t " .. pane_id .. " -p '#{pane_id}'")) == "")
 	if type(result) == "boolean" and not result then
@@ -59,11 +67,6 @@ function M.get_pane_idx(pane_id)
 	return Util.normalize_return(vim.fn.system("tmux display -t " .. pane_id .. " -p '#{pane_index}'"))
 end
 
-function M.is_pane_not_exists(pane_id)
-	vim.validate({ pane_id = { pane_id, "string" } })
-	return M.pane_exists(M.get_pane_idx(pane_id))
-end
-
 function M.get_pane_current_command(pane_idx)
 	vim.validate({
 		pane_idx = { tonumber(pane_idx), "number" },
@@ -77,8 +80,8 @@ function M.get_total_active_panes()
 	return tonumber(Util.normalize_return(vim.fn.system("tmux list-panes | wc -l")))
 end
 
--- Get a list of pane IDs only; { 1, 2, 3 }
 function M.get_lists_pane_id_opened()
+	-- Get a list of pane IDs only; { 1, 2, 3 }
 	local total_panes = {}
 	for i = 1, M.get_total_active_panes() do
 		total_panes[#total_panes + 1] = M.get_pane_id(i)
@@ -100,10 +103,6 @@ function M.get_current_pane_idx()
 	)
 end
 
-function M.pane_cmd(cmd)
-	return Util.normalize_return(Util.normalize_return(vim.fn.system(cmd)))
-end
-
 function M.get_id_next_pane()
 	-- Jika terdapat 2 pane yang aktif, ambil 'the next' pane id number nya
 	return Util.normalize_return(vim.fn.system("tmux list-panes | grep -v 'active' | cut -d' ' -f7 | head -n 1"))
@@ -115,17 +114,9 @@ function M.get_pane_target(pane_idx)
 end
 
 function M.kill_pane(pane_id)
-	if M.pane_exists(pane_id) then
+	if M.is_pane_exists(pane_id) then
 		return vim.fn.system("tmux kill-pane -t " .. pane_id)
 	end
-end
-
-function M.sendCtrlC()
-	return "^C"
-end
-
-function M.sendClearScreen()
-	return "clear"
 end
 
 function M.back_to_pane(pane_idx)
@@ -170,9 +161,11 @@ end
 function M.go_right_pane()
 	vim.fn.system("tmux select-pane -R")
 end
+
 function M.go_left_pane()
 	vim.fn.system("tmux select-pane -L")
 end
+
 function M.go_down_pane()
 	vim.fn.system("tmux select-pane -D")
 end
@@ -264,12 +257,71 @@ function M.get_left_pane()
 	local pane_idx = M.get_current_pane_id()
 	local pane_id = M.get_pane_id(pane_idx)
 
-	if M.pane_exists(pane_idx) then
+	if M.is_pane_exists(pane_idx) then
 		Constant.set_sendID(pane_id)
 	end
 end
 
-function M.send_pane_cmd(task, isnewline)
+function M.update_keys_task(task_tbl_panes, lang_task)
+	task_tbl_panes.builder = lang_task.builder({})
+	task_tbl_panes.name = lang_task.name
+	local pane_id = Constant.get_sendID()
+	task_tbl_panes.pane_id = pane_id
+	Constant.set_sendID(pane_id)
+
+	if not M.is_pane_exists(task_tbl_panes.pane_id) then
+		M.go_right_pane()
+		task_tbl_panes.pane_id = pane_id
+	end
+	M.go_left_pane()
+end
+
+function M.send(content, target_pane, is_send_cmd, is_clear_sceen)
+	vim.validate({ target_pane = { target_pane, "string" } })
+
+	is_send_cmd = is_send_cmd or false
+
+	local split_content
+	local cmds
+
+	if not M.is_pane_exists(target_pane) then
+		Util.warn("Pane '" .. target_pane .. "' not exists anymore or deleted")
+		return
+	end
+
+	if is_send_cmd then
+		local tmux_send_cmd = "tmux send -t " .. target_pane
+		local final_cmd = tmux_send_cmd .. " '" .. content .. "'" .. " Enter"
+		cmds = { "sh", "-c", final_cmd }
+	else
+		if type(content) == "table" then
+			split_content = Util.list_strip_empty_lines(content)
+			cmds = { "sh", "-c", "echo '" .. table.concat(split_content, "\n") .. "' | tmux load-buffer -" }
+		elseif type(content) == "string" then
+			split_content = content
+			cmds = { "sh", "-c", "echo '" .. split_content .. "' | tmux load-buffer -" }
+		end
+
+		if #split_content == 0 then
+			-- tmux may not update the buffer with an empty string.
+			-- vim.fn.system("tmux set-buffer '\n'")
+			cmds = { "sh", "-c", "echo '\n' | tmux load-buffer -" }
+		end
+	end
+
+	if is_clear_sceen then
+		local cmd_newline = "tmux send -t" .. target_pane .. " '" .. __cmd_clear_screen() .. "' Enter "
+		vim.system({ "sh", "-c", cmd_newline })
+	end
+
+	vim.system(cmds)
+
+	if not is_send_cmd then
+		vim.system({ "tmux", "paste-buffer", "-dpr", "-t", target_pane })
+	end
+end
+
+function M.send_pane_cmd(task, is_clear_screen)
 	vim.validate({
 		task = { task, "table", true },
 		isnewline = { isnewline, "boolean", true },
@@ -280,65 +332,17 @@ function M.send_pane_cmd(task, isnewline)
 		return
 	end
 
-	local pane_id = task.pane_id
-	local cmd_msg = task.builder.cmd
+	local target_pane = task.pane_id
+	local content = task.builder.cmd
 
-	if not M.pane_exists(pane_id) then
-		Util.warn("pane id: " .. pane_id .. " not exist")
-		return
-	end
-
-	if isnewline then
-		vim.fn.system("tmux send -t" .. pane_id .. " '" .. M.sendClearScreen() .. "' Enter ")
-	end
-
-	-- cmd_nvim contains question marks in its output so they must be removed first
-	cmd_msg = string.gsub(cmd_msg, '"', "")
-
-	local tmux_sendcmd = "tmux send -t " .. pane_id
-	local final_cmd = tmux_sendcmd .. " '" .. cmd_msg .. "'" .. " Enter"
-	vim.fn.system(final_cmd)
+	M.send(content, target_pane, true, is_clear_screen)
 end
 
-function M.update_keys_task(task_tbl_panes, lang_task)
-	task_tbl_panes.builder = lang_task.builder({})
-	task_tbl_panes.name = lang_task.name
-	local pane_id = Constant.get_sendID()
-	task_tbl_panes.pane_id = pane_id
-	Constant.set_sendID(pane_id)
+function M.send_interrupt(target_pane)
+	local send_pane = Constant.get_sendID()
+	target_pane = target_pane or send_pane
 
-	if not M.pane_exists(task_tbl_panes.pane_id) then
-		M.go_right_pane()
-		task_tbl_panes.pane_id = pane_id
-	end
-	M.go_left_pane()
-end
-
-function M.send_interrupt()
-	local pane_id = Constant.get_sendID()
-	M.send_pane_cmd(pane_id, M.sendCtrlC())
-end
-
-function M.send(content, target_pane)
-	local split_content
-	local cmd_load_buffer
-
-	if type(content) == "table" then
-		split_content = Util.list_strip_empty_lines(content)
-		cmd_load_buffer = { "sh", "-c", "echo '" .. table.concat(split_content, "\n") .. "' | tmux load-buffer -" }
-	elseif type(content) == "string" then
-		split_content = content
-		cmd_load_buffer = { "sh", "-c", "echo '" .. split_content .. "' | tmux load-buffer -" }
-	end
-
-	if #split_content == 0 then
-		-- tmux may not update the buffer with an empty string.
-		-- vim.fn.system("tmux set-buffer '\n'")
-		cmd_load_buffer = { "sh", "-c", "echo '\n' | tmux load-buffer -" }
-	end
-
-	vim.system(cmd_load_buffer)
-	vim.system({ "tmux", "paste-buffer", "-dpr", "-t", target_pane })
+	M.send(__cmd_ctrl_c(), target_pane, true)
 end
 
 function M.send_line(target_pane)
