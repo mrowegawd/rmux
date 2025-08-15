@@ -38,6 +38,13 @@ function Integs:run_file(name_cmd, type_strategy)
 
 	local is_clear_sceen = true
 
+	local selected_panes = Constant.get_selected_pane()
+	if selected_panes and selected_panes[1] then
+		if not self:run().is_pane_exists(selected_panes[1]) then
+			Constant.set_selected_pane({})
+		end
+	end
+
 	if #tbl_opened_panes == 0 and (self:run().get_total_active_panes() == 1) then
 		self:_respawn_pane()
 		tbl_opened_panes = Constant.get_tbl_opened_panes()
@@ -210,7 +217,7 @@ end
 
 function Integs:send_line()
 	local selected_panes = Constant.get_selected_pane()
-	if not selected_panes then
+	if not selected_panes or (#selected_panes == 0) then
 		Integs:select_target_panes()
 		return
 	end
@@ -219,7 +226,7 @@ end
 
 function Integs:send_line_range()
 	local selected_panes = Constant.get_selected_pane()
-	if not selected_panes then
+	if not selected_panes or (#selected_panes == 0) then
 		Integs:select_target_panes()
 		return
 	end
@@ -281,7 +288,7 @@ end
 
 function Integs:send_signal_interrupt()
 	local selected_panes = Constant.get_selected_pane()
-	if not selected_panes then
+	if not selected_panes or (#selected_panes == 0) then
 		Integs:select_target_panes()
 		return
 	end
@@ -356,7 +363,7 @@ function Integs:find_err()
 	local cur_pane_id = self:run().get_current_pane_id()
 
 	local selected_panes = Constant.get_selected_pane()
-	if not selected_panes then
+	if not selected_panes or (#selected_panes == 0) then
 		Integs:select_target_panes()
 		return
 	end
@@ -398,20 +405,34 @@ function Integs:kill_pane(pane_id)
 	vim.validate({ pane_id = { pane_id, "string" } })
 
 	self:run().kill_pane(pane_id)
+
 	-- Delete pane_id jika terdapat pada `tbl_opened_panes`
 	Constant.remove_pane_from_opened(pane_id)
+
+	-- Delete pane_id jika terdapat pada `selected_panes`
+	local selected_panes = Constant.get_selected_pane()
+	if selected_panes and selected_panes[1] then
+		if not self:run().is_pane_exists(selected_panes[1]) then
+			Constant.set_selected_pane({})
+		end
+	end
 end
 
-function Integs:close_all_panes()
+function Integs:close_all_panes(is_only_settings)
+	is_only_settings = is_only_settings or false
+
 	if self:run() == "default" then
 		vim.cmd.OverseerToggle()
 		return
 	end
 
-	loop_panes(function(pane)
-		self:run().kill_pane(pane.pane_id)
-	end)
+	if not is_only_settings then
+		loop_panes(function(pane)
+			self:run().kill_pane(pane.pane_id)
+		end)
+	end
 
+	Constant.set_selected_pane({})
 	Config.settings.base.tbl_opened_panes = {}
 end
 

@@ -194,17 +194,14 @@ end
 --  ╰──────────────────────────────────────────────────────────╯
 
 function M.warn(msg)
-	vim.validate({ msg = { msg, "string" } })
 	vim.notify(msg, vim.log.levels.WARN, { title = "RMUX" })
 end
 
 function M.error(msg)
-	vim.validate({ msg = { msg, "string" } })
 	vim.notify(msg, vim.log.levels.ERROR, { title = "RMUX" })
 end
 
 function M.info(msg)
-	vim.validate({ msg = { msg, "string" } })
 	vim.notify(msg, vim.log.levels.INFO, { title = "RMUX" })
 end
 

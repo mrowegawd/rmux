@@ -3,6 +3,7 @@ local M = {}
 local Constant = require("rmux.constant")
 local Fzf = require("rmux.picker.fzf")
 local Config = require("rmux.config")
+local Util = require("rmux.utils")
 
 local function title_formatter(str)
 	str = str or ""

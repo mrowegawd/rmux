@@ -495,6 +495,7 @@ function M.grep_err_output_commands(current_pane, target_panes, opts)
 	local num_history_lines = opts.num_history_lines or 10000
 
 	local results = {}
+	local seen = {}
 
 	for _, pane in ipairs(panes) do
 		local pane_id = pane
@@ -554,10 +555,17 @@ function M.grep_err_output_commands(current_pane, target_panes, opts)
 					end
 
 					if path:is_file() then
+						-- local result = { path = path:normalize(), lnum = lnum, cnum = cnum, text = text }
+						-- local key = result.path .. ":" .. (result.lnum or "") .. ":" .. (result.cnum or "")
+						-- if results[key] == nil then
+						-- 	results[key] = result
+						-- end
+
 						local result = { path = path:normalize(), lnum = lnum, cnum = cnum, text = text }
 						local key = result.path .. ":" .. (result.lnum or "") .. ":" .. (result.cnum or "")
-						if results[key] == nil then
-							results[key] = result
+						if not seen[key] then
+							table.insert(results, result)
+							seen[key] = true
 						end
 					end
 				end

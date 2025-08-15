@@ -1,5 +1,6 @@
 local Util = require("rmux.utils")
 local UtilFzfMapping = require("rmux.picker.fzf.mappings.utils")
+local Constant = require("rmux.constant")
 
 local M = {}
 
@@ -105,11 +106,14 @@ function M.select_pane(Integs, opts)
 		end,
 	}
 	-- fzfopts.actions = vim.tbl_extend("keep", FzfMapTarget(Integs, opts), {})
+
+  --stylua: ignore
 	fzfopts.actions = {
 		["default"] = UtilFzfMapping.default_target(Integs, opts),
 		["ctrl-x"] = UtilFzfMapping.pane_kill(Integs),
+		["alt-x"] = function() Integs:close_all_panes() end,
 	}
-	fzfopts.fzf_opts = { ["--header"] = [[^x:killpane]] }
+	fzfopts.fzf_opts = { ["--header"] = [[^x:kill-pane  a-x:kill-all-pane]] }
 	fzfopts.winopts = function()
 		return {
 			title = format_title(opts.title, " "),
@@ -138,12 +142,10 @@ function M.gen_select(Integs, opts, title, is_overseer)
 	end
 
 	local title_str = title:gsub("^%l", string.upper)
-
-	fzfopts.fzf_opts = { ["--header"] = [[^w:watch  ^f:overseer-cmds  ^o:overseer-open]] }
 	fzfopts.winopts = function()
 		return {
 			title = format_title(title_str, "󰑮"),
-			width = 0.40,
+			width = 0.70,
 			height = #opts + 4,
 			col = 0.50,
 			row = 0.50,
@@ -152,10 +154,20 @@ function M.gen_select(Integs, opts, title, is_overseer)
 		}
 	end
 
+	fzfopts.fzf_opts = {
+		["--header"] = [[^w:watch  ^f:overseer-cmds  ^o:overseer-open  ^e:grep-err  ^s:select-pane  ^d:detach!  ^v:unwatch!  a-x:kill-all-pane]],
+	}
+
+  --stylua: ignore
 	fzfopts.actions = {
 		["default"] = UtilFzfMapping.default_select(Integs, is_overseer),
-		["ctrl-o"] = UtilFzfMapping.overseer_open(),
+		["alt-x"] = function() Integs:close_all_panes() end,
+		["ctrl-d"] = function() Util.warn("Detach all panes!") Integs:close_all_panes(true) end,
 		["ctrl-f"] = UtilFzfMapping.overseer_cmds(title_str),
+		["ctrl-o"] = UtilFzfMapping.overseer_open(),
+		["ctrl-s"] = function() Integs:select_target_panes() end,
+		["ctrl-e"] = function() Integs:find_err() end,
+		["ctrl-v"] = function() Util.info("Unwatch!") Constant.set_selected_pane({}) end,
 		["ctrl-w"] = UtilFzfMapping.overseer_watch(Integs, is_overseer),
 	}
 
@@ -179,31 +191,34 @@ function M.grep_err(Integs, opts, is_overseer)
 
 	function GrepErrPreviewer:parse_entry(entry_str)
 		if entry_str then
-			local s_split
-			if string.match(entry_str, "|") then
-				s_split = Util.strip_whitespace(vim.split(entry_str, "|")[1])
-			else
-				s_split = entry_str
+			local s_split_str = vim.split(entry_str, ":")
+			if not s_split_str then
+				Util.went("An error occurred while splitting the string ':'")
+				return {}
 			end
 
-			-- jika entry_str = ["./main.go:23:2"] = {
-			--                        cnum = "2",
-			--                        lnum = "23",
-			--                        path = "./main.go"
-			--                  },
+			local s_split_file = Util.strip_whitespace(s_split_str[1])
+			local s_split_lnum = Util.strip_whitespace(s_split_str[2])
+
+			-- Debug output:
+			--
+			-- entry_str = "main.py:10:0"
+			-- opts.results = {
+			-- 	{
+			-- 		cnum = 0,
+			-- 		lnum = 10,
+			-- 		path = "main.py",
+			-- 		text = '  ...bunch of text..'
+			-- 	},
+			-- }
+
 			-- sama dengan key dari results
 			local data
-			for i, x in pairs(opts.results) do
-				if s_split == i then
-					local line
-					if x.lnum == nil then
-						line = 1
-					end
-
-					line = x.lnum
+			for _, x in pairs(opts.results) do
+				if x.path == s_split_file and tonumber(x.lnum) == tonumber(s_split_lnum) then
 					data = {
 						path = x.path,
-						line = line,
+						line = x.lnum,
 						col = x.cnum,
 					}
 				end
@@ -237,22 +252,29 @@ function M.grep_err(Integs, opts, is_overseer)
 
 	local function format_results()
 		local items = {}
-		local spaces = 0
-		for key, _ in pairs(opts.results) do
-			if #key > spaces then
-				spaces = #key
+		local max_keyname_len = 0
+
+		for _, v in pairs(opts.results) do
+			local keyname = string.format("%s:%s:%s", v.path, v.lnum, v.cnum)
+			if #keyname > 0 then
+				if #keyname > max_keyname_len then
+					max_keyname_len = #keyname
+				end
 			end
 		end
-		for key, val in pairs(opts.results) do
+
+		for _, val in pairs(opts.results) do
 			if #val.text > 0 then
-				items[#items + 1] = string.format("%s%s | %s", key, (" "):rep(spaces - #key), val.text)
-			else
-				items[#items + 1] = key
+				local keyname = string.format("%s:%s:%s", val.path, val.lnum, val.cnum)
+				local padding = (" "):rep(max_keyname_len - #keyname)
+				items[#items + 1] = string.format("%s%s | %s", keyname, padding, val.text)
 			end
 		end
+
 		return items
 	end
 
+	-- Util.info(vim.inspect(opts.results))
 	local contents = format_results()
 
 	if #contents == 0 then
@@ -261,6 +283,8 @@ function M.grep_err(Integs, opts, is_overseer)
 	end
 
 	fzfopts.fzf_opts = { ["--header"] = [[^w:watch]] }
+
+	 --stylua: ignore
 	fzfopts.actions = {
 		["default"] = UtilFzfMapping.default_err(opts.results),
 		["ctrl-s"] = UtilFzfMapping.err_open_split(opts.results),
@@ -268,15 +292,9 @@ function M.grep_err(Integs, opts, is_overseer)
 		["ctrl-t"] = UtilFzfMapping.err_open_tab(opts.results),
 		["ctrl-w"] = UtilFzfMapping.overseer_watch(Integs, is_overseer),
 		["alt-q"] = UtilFzfMapping.send_to_qf(opts.results),
-		["alt-Q"] = {
-			prefix = "select-all+accept",
-			fn = UtilFzfMapping.send_to_qf_all(opts.results),
-		},
+		["alt-Q"] = { prefix = "select-all+accept", fn = UtilFzfMapping.send_to_qf_all(opts.results), },
 		["alt-l"] = UtilFzfMapping.send_to_loc(opts.results),
-		["alt-L"] = {
-			prefix = "select-all+accept",
-			fn = UtilFzfMapping.send_to_loc_all(opts.results),
-		},
+		["alt-L"] = { prefix = "select-all+accept", fn = UtilFzfMapping.send_to_loc_all(opts.results), },
 	}
 
 	fzflua.fzf_exec(contents, fzfopts)

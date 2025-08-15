@@ -3,30 +3,38 @@ local Util = require("rmux.utils")
 
 local M = {}
 
-local get_col_and_row = function(x)
-	local line, col
-	if x.lnum ~= nil then
-		line = x.lnum
-	else
-		line = 1
+local str_filter = function(sel)
+	local s_split_str = vim.split(sel, ":")
+	if not s_split_str then
+		Util.went("An error occurred while splitting the string ':'")
+		return {}
 	end
 
-	if x.cnum ~= nil then
-		col = x.cnum
-	else
-		col = 1
-	end
-	return tonumber(line), tonumber(col)
+	local s_split_file = Util.strip_whitespace(s_split_str[1])
+	local s_split_lnum = Util.strip_whitespace(s_split_str[2])
+	return s_split_file, s_split_lnum
 end
 
-local str_filter = function(sel)
-	local s_split
-	if string.match(sel, "|") then
-		s_split = Util.strip_whitespace(vim.split(sel, "|")[1])
-	else
-		s_split = sel
+local process_selected_result = function(results, selection, func)
+	local sel
+	if type(selection) == "string" then
+		sel = selection
 	end
-	return s_split
+	if type(selection) == "table" then
+		sel = selection[1]
+	end
+
+	local s_file, s_lnum = str_filter(sel)
+
+	for _, x in pairs(results) do
+		if x.path == s_file and tonumber(x.lnum) == tonumber(s_lnum) then
+			return func(x)
+		end
+	end
+end
+
+local data_for_quickfix = function(results, selection, func)
+	process_selected_result(results, selection, func)
 end
 
 -- ╭─────────────────────────────────────────────────────────╮
@@ -134,17 +142,10 @@ function M.default_err(results)
 			return
 		end
 
-		local sel = selected[1]
-		local s_split = str_filter(sel)
-
-		for i, x in pairs(results) do
-			if s_split == i then
-				local line, col = get_col_and_row(x)
-				vim.cmd("e " .. x.path)
-				vim.api.nvim_win_set_cursor(0, { line, col })
-				break
-			end
-		end
+		process_selected_result(results, selected, function(x)
+			vim.cmd("e " .. x.path)
+			vim.api.nvim_win_set_cursor(0, { x.lnum, x.cnum })
+		end)
 	end
 end
 
@@ -159,6 +160,9 @@ function M.pane_kill(Integs)
 		if pane_id then
 			Integs:kill_pane(pane_id)
 		end
+
+		-- NOTE: reload need it
+		-- require("fzf-lua").actions.resume()
 	end
 end
 
@@ -172,17 +176,10 @@ function M.err_open_split(results)
 			return
 		end
 
-		local sel = selected[1]
-		local s_split = str_filter(sel)
-
-		for i, x in pairs(results) do
-			if s_split == i then
-				local line, col = get_col_and_row(x)
-				vim.cmd("sp " .. x.path)
-				vim.api.nvim_win_set_cursor(0, { line, col })
-				break
-			end
-		end
+		process_selected_result(results, selected, function(x)
+			vim.cmd("sp " .. x.path)
+			vim.api.nvim_win_set_cursor(0, { x.lnum, x.cnum })
+		end)
 	end
 end
 
@@ -192,17 +189,10 @@ function M.err_open_vsplit(results)
 			return
 		end
 
-		local sel = selected[1]
-		local s_split = str_filter(sel)
-
-		for i, x in pairs(results) do
-			if s_split == i then
-				local line, col = get_col_and_row(x)
-				vim.cmd("vsp " .. x.path)
-				vim.api.nvim_win_set_cursor(0, { line, col })
-				break
-			end
-		end
+		process_selected_result(results, selected, function(x)
+			vim.cmd("vsp " .. x.path)
+			vim.api.nvim_win_set_cursor(0, { x.lnum, x.cnum })
+		end)
 	end
 end
 
@@ -212,17 +202,10 @@ function M.err_open_tab(results)
 			return
 		end
 
-		local sel = selected[1]
-		local s_split = str_filter(sel)
-
-		for i, x in pairs(results) do
-			if s_split == i then
-				local line, col = get_col_and_row(x)
-				vim.cmd("tabnew " .. x.path)
-				vim.api.nvim_win_set_cursor(0, { line, col })
-				break
-			end
-		end
+		process_selected_result(results, selected, function(x)
+			vim.cmd("tabnew" .. x.path)
+			vim.api.nvim_win_set_cursor(0, { x.lnum, x.cnum })
+		end)
 	end
 end
 
@@ -236,37 +219,24 @@ function M.send_to_qf(results)
 
 		if #selected > 1 then
 			for _, sel in pairs(selected) do
-				local s_split = str_filter(sel)
-
-				for i, x in pairs(results) do
-					if s_split == i then
-						local line, col = get_col_and_row(x)
-						items[#items + 1] = {
-							filename = x.path,
-							lnum = line,
-							col = col,
-							text = x.text,
-						}
-						break
-					end
-				end
-			end
-		else
-			local sel = selected[1]
-			local s_split = str_filter(sel)
-
-			for i, x in pairs(results) do
-				if s_split == i then
-					local line, col = get_col_and_row(x)
+				data_for_quickfix(results, sel, function(x)
 					items[#items + 1] = {
 						filename = x.path,
-						lnum = line,
-						col = col,
+						lnum = x.lnum,
+						col = x.cnum,
 						text = x.text,
 					}
-					break
-				end
+				end)
 			end
+		else
+			data_for_quickfix(results, selected, function(x)
+				items[#items + 1] = {
+					filename = x.path,
+					lnum = x.lnum,
+					col = x.cnum,
+					text = x.text,
+				}
+			end)
 		end
 
 		local what = {
@@ -285,20 +255,14 @@ function M.send_to_qf_all(results)
 		local items = {}
 
 		for _, sel in pairs(selected) do
-			local s_split = str_filter(sel)
-
-			for i, x in pairs(results) do
-				if s_split == i then
-					local line, col = get_col_and_row(x)
-					items[#items + 1] = {
-						filename = x.path,
-						lnum = line,
-						col = col,
-						text = x.text,
-					}
-					break
-				end
-			end
+			data_for_quickfix(results, sel, function(x)
+				items[#items + 1] = {
+					filename = x.path,
+					lnum = x.lnum,
+					col = x.cnum,
+					text = x.text,
+				}
+			end)
 		end
 
 		local what = {
@@ -318,37 +282,24 @@ function M.send_to_loc(results)
 
 		if #selected > 1 then
 			for _, sel in pairs(selected) do
-				local s_split = str_filter(sel)
-
-				for i, x in pairs(results) do
-					if s_split == i then
-						local line, col = get_col_and_row(x)
-						items[#items + 1] = {
-							filename = x.path,
-							lnum = line,
-							col = col,
-							text = x.text,
-						}
-						break
-					end
-				end
-			end
-		else
-			local sel = selected[1]
-			local s_split = str_filter(sel)
-
-			for i, x in pairs(results) do
-				if s_split == i then
-					local line, col = get_col_and_row(x)
+				data_for_quickfix(results, sel, function(x)
 					items[#items + 1] = {
 						filename = x.path,
-						lnum = line,
-						col = col,
+						lnum = x.lnum,
+						col = x.cnum,
 						text = x.text,
 					}
-					break
-				end
+				end)
 			end
+		else
+			data_for_quickfix(results, selected, function(x)
+				items[#items + 1] = {
+					filename = x.path,
+					lnum = x.lnum,
+					col = x.cnum,
+					text = x.text,
+				}
+			end)
 		end
 
 		vim.fn.setloclist(0, {}, " ", {
@@ -365,20 +316,14 @@ function M.send_to_loc_all(results)
 		local items = {}
 
 		for _, sel in pairs(selected) do
-			local s_split = str_filter(sel)
-
-			for i, x in pairs(results) do
-				if s_split == i then
-					local line, col = get_col_and_row(x)
-					items[#items + 1] = {
-						filename = x.path,
-						lnum = line,
-						col = col,
-						text = x.text,
-					}
-					break
-				end
-			end
+			data_for_quickfix(results, sel, function(x)
+				items[#items + 1] = {
+					filename = x.path,
+					lnum = x.lnum,
+					col = x.cnum,
+					text = x.text,
+				}
+			end)
 		end
 
 		vim.fn.setloclist(0, {}, " ", {
