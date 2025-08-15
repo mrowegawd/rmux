@@ -37,6 +37,25 @@ local data_for_quickfix = function(results, selection, func)
 	process_selected_result(results, selection, func)
 end
 
+local buf_process_selected_result = function(pattern, selection, func)
+	local sel
+	if type(selection) == "string" then
+		sel = selection
+	end
+	if type(selection) == "table" then
+		sel = selection[1]
+	end
+
+	local file, line_num = sel:match(pattern)
+	if file and line_num then
+		func(file, line_num)
+	end
+end
+
+local buf_data_for_quickfix = function(pattern, selection, func)
+	buf_process_selected_result(pattern, selection, func)
+end
+
 -- ╭─────────────────────────────────────────────────────────╮
 -- │                        OVERSEER                         │
 -- ╰─────────────────────────────────────────────────────────╯
@@ -149,6 +168,19 @@ function M.default_err(results)
 	end
 end
 
+function M.default_buf_grep(pattern)
+	return function(selected, _)
+		if selected[1] == nil then
+			return
+		end
+
+		buf_process_selected_result(pattern, selected, function(file, line_num)
+			vim.cmd(string.format("edit %s", file))
+			vim.cmd(string.format("%d", tonumber(line_num)))
+		end)
+	end
+end
+
 function M.pane_kill(Integs)
 	return function(selected)
 		if selected[1] == nil then
@@ -205,6 +237,49 @@ function M.err_open_tab(results)
 		process_selected_result(results, selected, function(x)
 			vim.cmd("tabnew" .. x.path)
 			vim.api.nvim_win_set_cursor(0, { x.lnum, x.cnum })
+		end)
+	end
+end
+
+-- ╭─────────────────────────────────────────────────────────╮
+-- │                      ERRORS BUFFER                      │
+-- ╰─────────────────────────────────────────────────────────╯
+
+function M.buf_open_split(pattern)
+	return function(selected, _)
+		if selected[1] == nil then
+			return
+		end
+
+		buf_process_selected_result(pattern, selected, function(file, line_num)
+			vim.cmd(string.format("sp %s", file))
+			vim.cmd(string.format("%d", tonumber(line_num)))
+		end)
+	end
+end
+
+function M.buf_open_vsplit(pattern)
+	return function(selected, _)
+		if selected[1] == nil then
+			return
+		end
+
+		buf_process_selected_result(pattern, selected, function(file, line_num)
+			vim.cmd(string.format("vsp %s", file))
+			vim.cmd(string.format("%d", tonumber(line_num)))
+		end)
+	end
+end
+
+function M.buf_open_tab(pattern)
+	return function(selected, _)
+		if selected[1] == nil then
+			return
+		end
+
+		buf_process_selected_result(pattern, selected, function(file, line_num)
+			vim.cmd(string.format("tabnew %s", file))
+			vim.cmd(string.format("%d", tonumber(line_num)))
 		end)
 	end
 end
@@ -330,6 +405,128 @@ function M.send_to_loc_all(results)
 			nr = "$",
 			items = items,
 			title = "Grep errors (all)",
+		})
+		vim.cmd(Constant.open_loc())
+	end
+end
+
+function M.buf_send_to_qf(pattern)
+	return function(selected, _)
+		local items = {}
+
+		if #selected > 1 then
+			for _, sel in pairs(selected) do
+				buf_data_for_quickfix(pattern, sel, function(file, line_num)
+					items[#items + 1] = {
+						filename = file,
+						lnum = line_num,
+						col = 0,
+						text = file,
+					}
+				end)
+			end
+		else
+			buf_data_for_quickfix(pattern, selected, function(file, line_num)
+				items[#items + 1] = {
+					filename = file,
+					lnum = line_num,
+					col = 0,
+					text = file,
+				}
+			end)
+		end
+
+		local what = {
+			idx = "$",
+			items = items,
+			title = "Grep buf",
+		}
+
+		vim.fn.setqflist({}, "r", what)
+		vim.cmd(Constant.open_qf())
+	end
+end
+
+function M.buf_send_to_qf_all(pattern)
+	return function(selected, _)
+		local items = {}
+
+		for _, sel in pairs(selected) do
+			buf_data_for_quickfix(pattern, sel, function(file, line_num)
+				items[#items + 1] = {
+					filename = file,
+					lnum = line_num,
+					col = 0,
+					text = file,
+				}
+			end)
+		end
+
+		local what = {
+			idx = "$",
+			items = items,
+			title = "Grep buf (all)",
+		}
+
+		vim.fn.setqflist({}, "r", what)
+		vim.cmd(Constant.open_qf())
+	end
+end
+
+function M.buf_send_to_loc(pattern)
+	return function(selected, _)
+		local items = {}
+
+		if #selected > 1 then
+			for _, sel in pairs(selected) do
+				buf_data_for_quickfix(pattern, sel, function(file, line_num)
+					items[#items + 1] = {
+						filename = file,
+						lnum = line_num,
+						col = 0,
+						text = file,
+					}
+				end)
+			end
+		else
+			buf_data_for_quickfix(pattern, selected, function(file, line_num)
+				items[#items + 1] = {
+					filename = file,
+					lnum = line_num,
+					col = 0,
+					text = file,
+				}
+			end)
+		end
+
+		vim.fn.setloclist(0, {}, " ", {
+			nr = "$",
+			items = items,
+			title = "Grep buf",
+		})
+		vim.cmd(Constant.open_loc())
+	end
+end
+
+function M.buf_send_to_loc_all(pattern)
+	return function(selected, _)
+		local items = {}
+
+		for _, sel in pairs(selected) do
+			buf_data_for_quickfix(pattern, sel, function(file, line_num)
+				items[#items + 1] = {
+					filename = file,
+					lnum = line_num,
+					col = 0,
+					text = file,
+				}
+			end)
+		end
+
+		vim.fn.setloclist(0, {}, " ", {
+			nr = "$",
+			items = items,
+			title = "Grep buf (all)",
 		})
 		vim.cmd(Constant.open_loc())
 	end

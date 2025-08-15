@@ -53,4 +53,8 @@ function M.grep_err(Integs, Integs_tmpl_cmd, cur_pane_id, target_panes, opts, is
 	Fzf.grep_err(Integs, opts, is_overseer)
 end
 
+function M.grep_buf()
+	Fzf.grep_buf()
+end
+
 return M

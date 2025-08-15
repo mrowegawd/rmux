@@ -42,6 +42,7 @@ function M.update_settings(opts)
 		RUN_INTERRUPT_ALL = "send_interrupt_all",
 
 		RUN_GRAB_ERR = "grep_err",
+		RUN_GRAB_BUF = "grep_buf",
 		RUN_TARGET_PANE = "target_pane",
 
 		RUN_EDIT_CONFIG = "edit_config",

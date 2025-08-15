@@ -59,6 +59,11 @@ local cmds = {
 			Call.command(Config.settings.provider_cmd.RUN_GRAB_ERR)
 		end
 	end,
+	["RmuxGrepBuf"] = function()
+		if err_loadMsg() then
+			Call.command(Config.settings.provider_cmd.RUN_GRAB_BUF)
+		end
+	end,
 	--  ────────────────────────────────────────────────────────────
 	["RmuxSendInterrupt"] = function()
 		if err_loadMsg() then

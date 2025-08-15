@@ -300,4 +300,80 @@ function M.grep_err(Integs, opts, is_overseer)
 	fzflua.fzf_exec(contents, fzfopts)
 end
 
+function M.grep_buf()
+	local pattern = "([^%s]+%.lua):(%d+)"
+
+	local results = {}
+	for _, line in ipairs(vim.api.nvim_buf_get_lines(0, 0, -1, false)) do
+		local file, line_num = line:match(pattern)
+		if file and line_num then
+			table.insert(results, string.format("%s:%s", file, line_num))
+		end
+	end
+
+	local fzflua, _, previewer_builtin = fzf_lua()
+	if fzflua == nil or previewer_builtin == nil then
+		return
+	end
+
+	-- local GrepBufPreviewer = previewer_fzf.cmd_async:extend()
+	local GrepBufPreviewer = previewer_builtin.buffer_or_file:extend()
+	function GrepBufPreviewer:new(o, optsc)
+		GrepBufPreviewer.super.new(self, o, optsc)
+		return self
+	end
+
+	function GrepBufPreviewer:parse_entry_and_verify(entry_str)
+		if entry_str then
+			-- return {}
+			local slice_str = vim.split(entry_str, ":")[1]
+			return {
+				path = slice_str,
+				line = tostring(line_num),
+				col = 0,
+			}
+			-- local pane_id = slice_str[1]
+			-- local cmd_capture = Integs:run().cmd_str_capture_pane(pane_id)
+			-- return "", "", table.concat(cmd_capture, " ")
+		end
+		return {}
+	end
+
+	fzfopts.previewer = {
+		_ctor = function()
+			return GrepBufPreviewer
+		end,
+	}
+
+	fzfopts.winopts = function()
+		return {
+			title = format_title("Edo Tensei!", "🚮"),
+			width = 0.95,
+			height = 0.80,
+			col = 0.50,
+			row = 0.60,
+			fullscreen = false,
+			preview = {
+				layout = "vertical",
+				horizontal = "right:40%",
+				vertical = "up:60%",
+			},
+		}
+	end
+
+	fzfopts.actions = {
+		["default"] = UtilFzfMapping.default_buf_grep(pattern),
+		["ctrl-s"] = UtilFzfMapping.buf_open_split(pattern),
+		["ctrl-v"] = UtilFzfMapping.buf_open_vsplit(pattern),
+		["ctrl-t"] = UtilFzfMapping.buf_open_tab(pattern),
+
+		["alt-q"] = UtilFzfMapping.buf_send_to_qf(pattern),
+		["alt-Q"] = { prefix = "select-all+accept", fn = UtilFzfMapping.buf_send_to_qf_all(pattern) },
+		["alt-l"] = UtilFzfMapping.buf_send_to_loc(pattern),
+		["alt-L"] = { prefix = "select-all+accept", fn = UtilFzfMapping.buf_send_to_loc_all(pattern) },
+	}
+
+	require("fzf-lua").fzf_exec(results, fzfopts)
+end
+
 return M

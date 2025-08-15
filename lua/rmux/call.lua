@@ -20,6 +20,10 @@ function M.grep_err()
 	Integs:find_err()
 end
 
+function M.grep_buf()
+	Picker.grep_buf()
+end
+
 function M.run_file()
 	if use_default_provider then
 		Picker.load_overseer(Integs, true)
