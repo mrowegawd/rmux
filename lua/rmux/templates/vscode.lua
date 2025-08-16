@@ -19,6 +19,7 @@ function VScode:load()
 			Constant.insert_tbl_tasks(tbl_data)
 		end)
 
+		Constant.set_template_provider("vscode")
 		return true
 	end
 	return false

@@ -63,6 +63,7 @@ function RMuxjson:load()
 				table.insert(tbl_data, output_task)
 			end
 
+			Constant.set_template_provider("rmux")
 			Constant.insert_tbl_tasks(tbl_data)
 			return true
 		end

@@ -87,8 +87,8 @@ local cmds = {
 	["RmuxEDITConfig"] = function()
 		Call.command(Config.settings.provider_cmd.RUN_EDIT_CONFIG)
 	end,
-	["RmuxREDITConfig"] = function()
-		Call.command(Config.settings.provider_cmd.RUN_REDIT_CONFIG)
+	["RmuxSelectFilerc"] = function()
+		Call.command(Config.settings.provider_cmd.RUN_SELECT_FILERC)
 	end,
 }
 

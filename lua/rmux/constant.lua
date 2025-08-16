@@ -85,6 +85,19 @@ function M.get_watcher_status()
 	return Config.settings.base.is_watcher
 end
 
+function M.get_dir_filerc()
+	return Config.settings.base.rmuxpath
+end
+
+function M.get_template_provider()
+	return Config.settings.base.provider
+end
+
+function M.set_template_provider(provider_name)
+	vim.validate({ provider_name = { provider_name, "string" } })
+	Config.settings.base.provider = provider_name
+end
+
 function M.open_qf()
 	return Config.settings.base.quickfix.copen
 end

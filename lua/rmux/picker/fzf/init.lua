@@ -55,8 +55,6 @@ local fzfopts = {
 	no_header = true,
 	no_header_i = true,
 	winopts = {
-		-- hls = { normal = "Normal" },
-		-- border = "rounded",
 		height = 0.4,
 		width = 0.30,
 		row = 0.40,
@@ -105,7 +103,6 @@ function M.select_pane(Integs, opts)
 			return CmdAsyncPreviewer
 		end,
 	}
-	-- fzfopts.actions = vim.tbl_extend("keep", FzfMapTarget(Integs, opts), {})
 
   --stylua: ignore
 	fzfopts.actions = {
@@ -212,7 +209,6 @@ function M.grep_err(Integs, opts, is_overseer)
 			-- 	},
 			-- }
 
-			-- sama dengan key dari results
 			local data
 			for _, x in pairs(opts.results) do
 				if x.path == s_split_file and tonumber(x.lnum) == tonumber(s_split_lnum) then
@@ -274,11 +270,10 @@ function M.grep_err(Integs, opts, is_overseer)
 		return items
 	end
 
-	-- Util.info(vim.inspect(opts.results))
 	local contents = format_results()
 
 	if #contents == 0 then
-		Util.info("Grep error: No results found")
+		Util.info("Grep error: We are good, no results found")
 		return
 	end
 
@@ -329,16 +324,12 @@ function M.grep_buf()
 
 	function GrepBufPreviewer:parse_entry_and_verify(entry_str)
 		if entry_str then
-			-- return {}
 			local slice_str = vim.split(entry_str, ":")[1]
 			return {
 				path = slice_str,
 				line = tostring(line_num),
 				col = 0,
 			}
-			-- local pane_id = slice_str[1]
-			-- local cmd_capture = Integs:run().cmd_str_capture_pane(pane_id)
-			-- return "", "", table.concat(cmd_capture, " ")
 		end
 		return {}
 	end
@@ -377,7 +368,54 @@ function M.grep_buf()
 		["alt-L"] = { prefix = "select-all+accept", fn = UtilFzfMapping.buf_send_to_loc_all(pattern) },
 	}
 
-	require("fzf-lua").fzf_exec(results, fzfopts)
+	fzflua.fzf_exec(results, fzfopts)
+end
+
+function M.select_filerc()
+	local dir_path = Constant.get_dir_filerc()
+
+	if not Util.is_dir(dir_path) then
+		dir_path = vim.fn.stdpath("cache") .. "/runmux/filerc"
+
+		if not Util.is_dir(dir_path) then
+			Util.info("create dir: " .. dir_path)
+			vim.system({ "mkdir", "-p", dir_path })
+		end
+	end
+
+	fzfopts.cwd = dir_path
+	fzfopts.fzf_opts = { ["--header"] = [[^e:edit-filerc]] }
+	fzfopts.winopts = {
+		title = RUtils.fzflua.format_title("Select Filerc", "󰈙"),
+		width = 0.95,
+		height = 0.80,
+		col = 0.50,
+		row = 0.60,
+		fullscreen = false,
+		preview = {
+			layout = "horizontal",
+			horizontal = "right:60%",
+			vertical = "up:60%",
+		},
+	}
+
+	local provider_name = Constant.get_template_provider()
+
+	-- Set default to vscode jika tidak ada template provider
+	if not provider_name or provider_name == "" then
+		provider_name = "vscode"
+		Constant.set_template_provider(provider_name)
+	end
+
+	fzfopts.actions = {
+		["default"] = UtilFzfMapping.default_filerc(provider_name),
+		["ctrl-s"] = UtilFzfMapping.open_filerc_split(provider_name),
+		["ctrl-v"] = UtilFzfMapping.open_filerc_vsplit(provider_name),
+		["ctrl-t"] = UtilFzfMapping.open_filerc_tab(provider_name),
+		["ctrl-e"] = UtilFzfMapping.open_filerc_edit(provider_name),
+	}
+
+	return require("fzf-lua").files(fzfopts)
 end
 
 return M

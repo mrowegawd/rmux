@@ -56,6 +56,30 @@ local buf_data_for_quickfix = function(pattern, selection, func)
 	buf_process_selected_result(pattern, selection, func)
 end
 
+local extract_filerc_path = function(sel, provider_name, opts)
+	local path = require("fzf-lua.path")
+	local p = path.entry_to_file(sel, opts, opts._uri)
+	if not p or not p.path then
+		Util.warn("Extract filerc path failed!")
+		return
+	end
+
+	local strip_filerc_path = {}
+
+	if provider_name == "vscode" then
+		strip_filerc_path = { ".vscode", "tasks.json" }
+	end
+
+	local filerc_project_path = table.concat(strip_filerc_path, "/")
+
+	if not Util.is_file(filerc_project_path) then
+		vim.system({ "mkdir", "-p", strip_filerc_path[1] })
+		vim.system({ "touch", filerc_project_path })
+	end
+
+	return p, filerc_project_path
+end
+
 -- ╭─────────────────────────────────────────────────────────╮
 -- │                        OVERSEER                         │
 -- ╰─────────────────────────────────────────────────────────╯
@@ -198,6 +222,24 @@ function M.pane_kill(Integs)
 	end
 end
 
+function M.default_filerc(provider_name)
+	return function(selected, opts)
+		local sel = selected[1]
+		if sel == nil then
+			return
+		end
+
+		local path, filerc_project_path = extract_filerc_path(sel, provider_name, opts)
+		if not path then
+			return
+		end
+
+		vim.cmd("e " .. filerc_project_path)
+		vim.cmd("0r! cat " .. path.path)
+		vim.cmd("0")
+	end
+end
+
 -- ╭─────────────────────────────────────────────────────────╮
 -- │                         ERRORS                          │
 -- ╰─────────────────────────────────────────────────────────╯
@@ -281,6 +323,80 @@ function M.buf_open_tab(pattern)
 			vim.cmd(string.format("tabnew %s", file))
 			vim.cmd(string.format("%d", tonumber(line_num)))
 		end)
+	end
+end
+
+-- ╭─────────────────────────────────────────────────────────╮
+-- │                       FILE SELECT                       │
+-- ╰─────────────────────────────────────────────────────────╯
+--
+function M.open_filerc_split(provider_name)
+	return function(selected, opts)
+		local sel = selected[1]
+		if sel == nil then
+			return
+		end
+
+		local path, filerc_project_path = extract_filerc_path(sel, provider_name, opts)
+		if not path then
+			return
+		end
+
+		vim.cmd("sp " .. filerc_project_path)
+		vim.cmd("0r! cat " .. path.path)
+		vim.cmd("0")
+	end
+end
+
+function M.open_filerc_vsplit(provider_name)
+	return function(selected, opts)
+		local sel = selected[1]
+		if sel == nil then
+			return
+		end
+
+		local path, filerc_project_path = extract_filerc_path(sel, provider_name, opts)
+		if not path then
+			return
+		end
+
+		vim.cmd("vsp " .. filerc_project_path)
+		vim.cmd("0r! cat " .. path.path)
+		vim.cmd("0")
+	end
+end
+
+function M.open_filerc_tab(provider_name)
+	return function(selected, opts)
+		local sel = selected[1]
+		if sel == nil then
+			return
+		end
+
+		local path, filerc_project_path = extract_filerc_path(sel, provider_name, opts)
+		if not path then
+			return
+		end
+
+		vim.cmd("tabnew " .. filerc_project_path)
+		vim.cmd("0r! cat " .. path.path)
+		vim.cmd("0")
+	end
+end
+
+function M.open_filerc_edit(provider_name)
+	return function(selected, opts)
+		local sel = selected[1]
+		if sel == nil then
+			return
+		end
+
+		local path, _ = extract_filerc_path(sel, provider_name, opts)
+		if not path then
+			return
+		end
+
+		vim.cmd("vsp " .. path.path)
 	end
 end
 

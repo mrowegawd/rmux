@@ -3,7 +3,6 @@ local M = {}
 local Constant = require("rmux.constant")
 local Fzf = require("rmux.picker.fzf")
 local Config = require("rmux.config")
-local Util = require("rmux.utils")
 
 local function title_formatter(str)
 	str = str or ""
@@ -55,6 +54,10 @@ end
 
 function M.grep_buf()
 	Fzf.grep_buf()
+end
+
+function M.selec_and_load_filerc()
+	Fzf.select_filerc()
 end
 
 return M

@@ -9,7 +9,7 @@ local default_settings = {
 		run_with = "mux", -- tmux, wez, tt, toggleterm (tt.nvim)
 		auto_kill = true,
 		size_pane = 12,
-		rmuxpath = vim.fn.expand("~/.config/nvim/runmux"),
+		rmuxpath = vim.fn.stdpath("cache") .. "/runmux/filerc",
 		quickfix = {
 			copen = "belowright copen",
 			lopen = "belowright lopen",
@@ -46,7 +46,7 @@ function M.update_settings(opts)
 		RUN_TARGET_PANE = "target_pane",
 
 		RUN_EDIT_CONFIG = "edit_config",
-		RUN_REDIT_CONFIG = "redit_config",
+		RUN_SELECT_FILERC = "select_filerc",
 		RUN_SHOW_CONFIG = "show_config",
 	}
 

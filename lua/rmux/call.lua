@@ -8,10 +8,6 @@ local M = {}
 
 local use_default_provider = false
 
--- local function _run_tasks_all()
--- 	Integs:open_all_panes()
--- end
-
 function M.grep_err()
 	if use_default_provider then
 		Util.warn("Cannot process, currently using the default provider (overseer)")
@@ -61,9 +57,13 @@ function M.target_pane()
 	Integs:select_target_panes()
 end
 
-function M.edit_config(isEdit, isFzf)
-	isEdit = isEdit or false
-	isFzf = isFzf or false
+function M.edit_config(is_select_file)
+	is_select_file = is_select_file or false
+
+	if is_select_file then
+		Picker.selec_and_load_filerc()
+		return
+	end
 
 	local run_with = Config.settings.base.run_with
 	local file_rc = Config.settings.base.fullpath .. "/" .. Config.settings.base.file_rc
@@ -73,31 +73,15 @@ function M.edit_config(isEdit, isFzf)
 	end
 
 	if not Util.exists(file_rc) then
-		-- if Config.settings.base.rmuxpath ~= nil and #Config.settings.base.rmuxpath > 0 then
 		Util.warn("Provider '" .. run_with .. "' used, but .vscode/tasks.json not found")
-		-- Fzf.select_rmuxfile()
-		-- else
-		-- 	Util.info({
-		-- 		msg = "File " .. Config.settings.base.file_rc .. " is not exists\nlemme create that for you",
-		-- 		setnotif = true,
-		-- 	})
-		--
-		-- 	for _, value in pairs(vim.api.nvim_list_runtime_paths()) do
-		-- 		if value:match("runmux") then
-		-- 			file_rc = value .. "/lua/rmux/fts/base.json"
-		-- 		end
-		-- 	end
-		-- 	vim.cmd("e " .. Config.settings.base.file_rc)
-		-- 	vim.cmd("0r! cat " .. file_rc)
-		-- 	vim.cmd("0")
 		return
 	end
 
 	vim.cmd("vsp " .. file_rc)
 end
 
-function M.redit_config()
-	Util.warn("not implemented yet")
+function M.select_filerc()
+	M.edit_config(true)
 end
 
 function M.kill_all_panes()
@@ -140,9 +124,6 @@ function M.command(state_cmd, dont_set_taskrc)
 		vim.tbl_contains(Config.settings.run_support_with, Config.settings.base.run_with),
 		"Supported commands (`run_with`): " .. table.concat(Config.settings.run_support_with, ", ")
 	)
-
-	-- Util.info(state_cmd)
-	-- Util.info(Config.settings.provider_cmd[state_cmd])
 
 	local run_with = Config.settings.base.run_with
 	if run_with == "auto" then
