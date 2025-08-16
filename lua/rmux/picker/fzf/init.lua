@@ -301,7 +301,11 @@ function M.grep_err(Integs, opts, is_overseer)
 end
 
 function M.grep_buf()
-	local pattern = "([^%s]+%.lua):(%d+)"
+	-- local pattern = "([^%s]+%.lua):(%d+)"
+	-- local pattern = "(.+):(%d+)"
+	-- local pattern = "([%s~].*):(%d+)"
+	-- local pattern = "%s([%w%p%s~]+):(%d+)"
+	local pattern = "([%w%._/~%-]*):(%d+)"
 
 	local results = {}
 	for _, line in ipairs(vim.api.nvim_buf_get_lines(0, 0, -1, false)) do
