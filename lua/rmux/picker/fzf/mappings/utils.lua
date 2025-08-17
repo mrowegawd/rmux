@@ -199,7 +199,7 @@ function M.default_buf_grep(pattern)
 		end
 
 		buf_process_selected_result(pattern, selected, function(file, line_num)
-			vim.cmd(string.format("edit %s", file))
+			vim.cmd(string.format("topleft vsp %s", file))
 			vim.cmd(string.format("%d", tonumber(line_num)))
 		end)
 	end
@@ -294,7 +294,7 @@ function M.buf_open_split(pattern)
 		end
 
 		buf_process_selected_result(pattern, selected, function(file, line_num)
-			vim.cmd(string.format("sp %s", file))
+			vim.cmd(string.format("topleft vsp %s", file))
 			vim.cmd(string.format("%d", tonumber(line_num)))
 		end)
 	end
@@ -307,7 +307,7 @@ function M.buf_open_vsplit(pattern)
 		end
 
 		buf_process_selected_result(pattern, selected, function(file, line_num)
-			vim.cmd(string.format("vsp %s", file))
+			vim.cmd(string.format("botright vsp %s | wincmd L", file))
 			vim.cmd(string.format("%d", tonumber(line_num)))
 		end)
 	end
