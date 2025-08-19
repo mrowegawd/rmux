@@ -6,6 +6,34 @@ local Job = require("plenary.job")
 --  │                         GENERALS                         │
 --  ╰──────────────────────────────────────────────────────────╯
 
+function M.system_call(contents)
+	vim.validate({ contents = { contents, "table" } })
+
+	-- M.info(vim.inspect(contents))
+
+	local outputs = vim.system(contents, { text = true }):wait()
+	if outputs.code ~= 0 then
+		M.error("Failed to execute system call with command: " .. table.concat(contents, " "))
+		return ""
+	end
+
+	return outputs.stdout
+end
+
+function M.system_call_prefix(contents_str, prefix_run_with)
+	vim.validate({ contents_str = { contents_str, "string" } }, { contents_str = { is_gsub, "boolean" } })
+
+	prefix_run_with = prefix_run_with or "mux"
+
+	local contents
+
+	if prefix_run_with == "mux" then
+		contents = { "sh", "-c", contents_str }
+	end
+
+	return M.system_call(contents)
+end
+
 local function require_gitsigns()
 	local HAVE_GITSIGNS = pcall(require, "gitsigns")
 	if HAVE_GITSIGNS then

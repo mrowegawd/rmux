@@ -47,13 +47,13 @@ function M.send_runfile(opts, state_cmd)
 	__respawn_pane()
 
 	-- Check if `pane_target.pane_id` is not exists, we must update the `pane_target.pane_id`
-	local tbl_opened_panes = Constant.get_tbl_opened_panes()
+	local tbl_active_tasks = Constant.get_active_tasks()
 	local pane_id = tonumber(Constant.get_sendID())
 
-	if Util.tablelength(tbl_opened_panes) == 0 then
+	if Util.tablelength(tbl_active_tasks) == 0 then
 		if WezUtil.pane_exists(pane_id) then
 			local open_pane
-			Constant.set_insert_tbl_opened_panes(
+			Constant.insert_active_tasks(
 				tostring(pane_id),
 				tonumber(pane_id),
 				open_pane,
@@ -76,7 +76,7 @@ function M.send_runfile(opts, state_cmd)
 			local pane_idc = tonumber(Constant.get_sendID())
 
 			---@diagnostic disable-next-line: unused-local
-			Constant.update_tbl_opened_panes(function(idx, pane)
+			Constant.update_active_tasks(function(idx, pane)
 				if pane.state_cmd == state_cmd then
 					run_pane_tbl.pane_id = pane_idc
 					run_pane_tbl.regex = opts.regex
@@ -117,8 +117,8 @@ function M.send_visual()
 
 	local send_pane = Constant.get_sendID()
 
-	-- if WezUtil.pane_iszoom() then
-	-- 	WezUtil.pane_toggle_zoom()
+	-- if WezUtil.is_pane_zoomed() then
+	-- 	WezUtil.set_pane_zoom()
 	-- end
 
 	vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Esc>", false, true, true), "nx", false)
@@ -185,7 +185,7 @@ local function __close_all()
 	end
 
 	if total_panes > 1 then
-		for _, pane in pairs(Constant.get_tbl_opened_panes()) do
+		for _, pane in pairs(Constant.get_active_tasks()) do
 			vim.schedule(function()
 				WezUtil.kill_pane(pane.pane_id)
 			end)
@@ -198,7 +198,7 @@ function M.close_all_panes()
 
 	__close_all()
 
-	Config.settings.base.tbl_opened_panes = {}
+	Config.settings.base.active_tasks_tbl = {}
 	WezUtil.back_to_pane(current_pane_id)
 end
 
@@ -318,7 +318,7 @@ function M.get_lists_pane_id_opened()
 	return list_pane_ids
 end
 
-function M.get_pane_idx(pane_id)
+function M.get_pane_idx_from_id(pane_id)
 	vim.validate({ pane_id = { pane_id, "string" } })
 
 	local idx = 1
@@ -376,7 +376,7 @@ function M.jump_to_pane_id(pane_id)
 	vim.fn.system("wezterm cli activate-pane --pane-id " .. pane_id)
 end
 
-function M.send_pane_cmd(task, isnewline)
+function M.send_pane_cmd_task(task, isnewline)
 	vim.validate({
 		task = { task, "table", true },
 		isnewline = { isnewline, "boolean", true },
@@ -495,7 +495,7 @@ function M.open_multi_panes(layouts, state_cmd)
 			end
 
 			local pane_num = WezUtil.get_pane_num(pane_id)
-			Constant.set_insert_tbl_opened_panes(
+			Constant.insert_active_tasks(
 				pane_id,
 				pane_num,
 				layouts_idx.open_pane,
@@ -537,8 +537,7 @@ function M.open_vertical_pane(pane_strategy, size)
 	return tostring(pane_id)
 end
 
-function M.reset_resize_pane(pane_id)
-	pane_id = pane_id or ""
+function M.reset_size_pane()
 	return true
 end
 
@@ -583,7 +582,7 @@ function M.cmd_str_capture_pane(pane_id, num_history_lines)
 end
 
 function M.send_multi(state_cmd)
-	for _, pane in pairs(Constant.get_tbl_opened_panes()) do
+	for _, pane in pairs(Constant.get_active_tasks()) do
 		if pane.state_cmd == state_cmd then
 			vim.fn.system(
 				wezterm_send .. "send-text --no-paste '" .. pane.command .. "'" .. " --pane-id " .. pane.pane_id
@@ -609,7 +608,7 @@ function M.grep_err_output_commands(current_pane, target_panes, opts)
 	-- local target_pane_id = Config.settings.sendID
 	--
 	-- local pane_target
-	-- for _, panes in pairs(Constant.get_tbl_opened_panes()) do
+	-- for _, panes in pairs(Constant.get_open_tasks_tbl()) do
 	-- 	if panes.pane_id == target_pane_id then
 	-- 		pane_target = panes
 	-- 	end

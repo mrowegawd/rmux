@@ -46,7 +46,7 @@ end
 function M.grep_err(Integs, Integs_tmpl_cmd, cur_pane_id, target_panes, opts, is_overseer)
 	opts.regex = opts.regex or "(([.\\w\\-~\\$@]+)(\\/?[\\w\\-@]+)+\\/?)\\.([\\w]+)(:\\d*:\\d*)?"
 	opts.grep_cmd = opts.grep_cmd or "grep -oP"
-	opts.results = opts.results or Integs_tmpl_cmd.grep_err_output_commands(cur_pane_id, target_panes, opts)
+	opts.results = Integs_tmpl_cmd.grep_err_output_commands(cur_pane_id, target_panes, opts)
 	opts.title = title_formatter(opts.title)
 
 	Fzf.grep_err(Integs, opts, is_overseer)

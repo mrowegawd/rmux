@@ -65,18 +65,6 @@ local fzfopts = {
 function M.select_pane(Integs, opts)
 	vim.validate({ opts = { opts, "table" }, Integs = { Integs, "table" } })
 
-	local function format_results()
-		local items = {}
-		for i, result in pairs(opts.results) do
-			if type(result) == "table" and result.builder ~= nil then
-				items[#items + 1] = i .. "   " .. result.builder.name
-			else
-				items[#items + 1] = i
-			end
-		end
-		return items
-	end
-
 	local fzflua, previewer_fzf, _ = fzf_lua()
 	if fzflua == nil or previewer_fzf == nil then
 		return
@@ -123,7 +111,7 @@ function M.select_pane(Integs, opts)
 		}
 	end
 
-	fzflua.fzf_exec(format_results(), fzfopts)
+	fzflua.fzf_exec(opts.select_pane_fzf, fzfopts)
 end
 
 function M.gen_select(Integs, opts, title, is_overseer)
@@ -164,7 +152,7 @@ function M.gen_select(Integs, opts, title, is_overseer)
 		["ctrl-o"] = UtilFzfMapping.overseer_open(),
 		["ctrl-s"] = function() Integs:select_target_panes() end,
 		["ctrl-e"] = function() Integs:find_err() end,
-		["ctrl-v"] = function() Util.info("Unwatch!") Constant.set_selected_pane({}) end,
+		["ctrl-v"] = function() Util.info("Unwatch!") Constant.set_selected_pane() end,
 		["ctrl-w"] = UtilFzfMapping.overseer_watch(Integs, is_overseer),
 	}
 
@@ -176,6 +164,11 @@ function M.grep_err(Integs, opts, is_overseer)
 
 	local fzflua, _, previewer_builtin = fzf_lua()
 	if fzflua == nil or previewer_builtin == nil then
+		return
+	end
+
+	if not opts.results or #opts.results == 0 then
+		Util.info("Grep err: No results found from grep")
 		return
 	end
 
@@ -250,6 +243,11 @@ function M.grep_err(Integs, opts, is_overseer)
 		local items = {}
 		local max_keyname_len = 0
 
+		if not opts.results or #opts.results == 0 then
+			Util.warn("Grep err: no results to display")
+			return {}
+		end
+
 		for _, v in pairs(opts.results) do
 			local keyname = string.format("%s:%s:%s", v.path, v.lnum, v.cnum)
 			if #keyname > 0 then
@@ -271,9 +269,7 @@ function M.grep_err(Integs, opts, is_overseer)
 	end
 
 	local contents = format_results()
-
 	if #contents == 0 then
-		Util.info("Grep error: We are good, no results found")
 		return
 	end
 

@@ -2,14 +2,26 @@ local Config = require("rmux.config")
 
 local M = {}
 
+function M.get_settings()
+	return Config.settings.base
+end
+
+function M.get_tasks()
+	return Config.settings.tasks
+end
+
+function M.get_sendID()
+	return Config.settings.sendID
+end
+
 function M.insert_tbl_tasks(tbl_data_task)
 	vim.validate({ tbl_data_langs = { tbl_data_task, "table" } })
 	for _, tasks in pairs(tbl_data_task) do
-		table.insert(Config.settings.tasks, tasks)
+		table.insert(M.get_tasks(), tasks)
 	end
 end
 
-function M.set_insert_tbl_opened_panes(pane_id, pane_idx, name_cmd, builder, type_strategy)
+function M.insert_active_tasks(pane_id, pane_idx, name_cmd, builder, type_strategy)
 	vim.validate({
 		pane_id = { pane_id, "string", true },
 		pane_idx = { pane_idx, "number", true },
@@ -17,7 +29,7 @@ function M.set_insert_tbl_opened_panes(pane_id, pane_idx, name_cmd, builder, typ
 		builder = { builder, "table", true },
 		type_strategy = { type_strategy, "string", true },
 	})
-	return table.insert(Config.settings.base.tbl_opened_panes, {
+	return table.insert(Config.settings.base.active_tasks, {
 		pane_id = pane_id,
 		pane_idx = pane_idx,
 		name = name_cmd,
@@ -26,21 +38,24 @@ function M.set_insert_tbl_opened_panes(pane_id, pane_idx, name_cmd, builder, typ
 	})
 end
 
-function M.get_tbl_opened_panes()
-	return Config.settings.base.tbl_opened_panes
+function M.get_active_tasks()
+	local base = M.get_settings()
+	return base.active_tasks
 end
 
-function M.update_tbl_opened_panes(fn)
-	for idx, task in pairs(Config.settings.base.tbl_opened_panes) do
+--Tweaking an item in the active_tasks list
+function M.update_active_tasks(fn)
+	local active_tasks = M.get_active_tasks()
+	for idx, task in pairs(active_tasks) do
 		fn(idx, task)
 	end
 end
 
-function M.remove_pane_from_opened(pane_id)
-	local tbl_opened_panes = Config.settings.base.tbl_opened_panes
-	for idx, pane in ipairs(tbl_opened_panes) do
+function M.remove_from_active_tasks(pane_id)
+	local active_tasks = M.get_active_tasks()
+	for idx, pane in ipairs(active_tasks) do
 		if pane.pane_id == pane_id then
-			table.remove(tbl_opened_panes, idx)
+			table.remove(active_tasks, idx)
 			break
 		end
 	end
@@ -53,63 +68,76 @@ function M.set_sendID(send_pane)
 	Config.settings.sendID = send_pane
 end
 
-function M.get_sendID()
-	return Config.settings.sendID
-end
-
-function M.get_tasks()
-	return Config.settings.tasks
-end
-
 function M.get_size_pane()
-	return Config.settings.base.size_pane
+	local base = M.get_settings()
+	return base.size_pane
+end
+
+function M.statusline_is_up(is_set)
+	local base = M.get_settings()
+	base.statusline = is_set
+end
+
+function M.get_statusline_status()
+	local base = M.get_settings()
+	return base.statusline
 end
 
 function M.set_selected_pane(panes_id)
-	vim.validate({ panes_id = { panes_id, "table" } })
-	Config.settings.base.selected_panes = panes_id
+	panes_id = panes_id or ""
+	local base = M.get_settings()
+	base.selected_pane = panes_id
 end
 
 function M.get_selected_pane()
-	return Config.settings.base.selected_panes
+	local base = M.get_settings()
+	return base.selected_pane
 end
 
 function M.set_watcher_status(status_watch)
 	vim.validate({ status_watch = { status_watch, "boolean" } })
 	if status_watch then
-		Config.settings.base.is_watcher = status_watch
+		local base = M.get_settings()
+		base.is_watcher = status_watch
 	end
 end
 
 function M.get_watcher_status()
-	return Config.settings.base.is_watcher
+	local base = M.get_settings()
+	return base.is_watcher
 end
 
 function M.get_dir_filerc()
-	return Config.settings.base.rmuxpath
+	local base = M.get_settings()
+	return base.rmuxpath
 end
 
 function M.get_template_provider()
-	return Config.settings.base.provider
+	local base = M.get_settings()
+	return base.provider
 end
 
 function M.set_template_provider(provider_name)
 	vim.validate({ provider_name = { provider_name, "string" } })
-	Config.settings.base.provider = provider_name
+	local base = M.get_settings()
+	base.provider = provider_name
 end
 
 function M.open_qf()
-	return Config.settings.base.quickfix.copen
+	local base = M.get_settings()
+	return base.quickfix.copen
 end
 
 function M.open_loc()
-	return Config.settings.base.quickfix.lopen
+	local base = M.get_settings()
+	return base.quickfix.lopen
 end
 
 ---------------------
 function M.find_state_cmd_on_tbl_opened_panes(state_cmd)
-	-- assert(#Config.settings.base.tbl_opened_panes > 0, "get_tbl_opened_panes must greater than zero")
-	for _, value in pairs(Config.settings.base.tbl_opened_panes) do
+	-- assert(#Config.settings.base.active_tasks > 0, "get_active_tasks must greater than zero")
+	local active_tasks = M.get_active_tasks()
+	for _, value in pairs(active_tasks) do
 		if value.state_cmd == state_cmd then
 			return value
 		end

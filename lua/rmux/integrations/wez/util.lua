@@ -99,11 +99,11 @@ function M.kill_pane(pane_id)
 	vim.fn.system("wezterm cli kill-pane --pane-id " .. pane_id)
 end
 
-function M.pane_iszoom()
+function M.is_pane_zoomed()
 	-- TODO: check zoom atau tidak, bisa dilihat di `wezterm cli list --format json`
 	return Util.normalize_return(vim.fn.system([[tmux display-message -p "#F"]])) == "*Z"
 end
-function M.pane_toggle_zoom()
+function M.set_pane_zoom()
 	return Util.normalize_return(vim.fn.system([[wezterm cli zoom-pane]]))
 end
 

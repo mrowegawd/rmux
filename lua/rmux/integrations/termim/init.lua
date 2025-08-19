@@ -20,7 +20,7 @@ function M.check_right_pane_id(win)
 end
 
 -- idw: id window
-function M.get_pane_idx(win)
+function M.get_pane_idx_from_id(win)
 	win = win or vim.api.nvim_get_current_win()
 	return vim.api.nvim_win_get_number(win)
 end

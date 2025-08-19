@@ -9,7 +9,7 @@ local is_not_run_overseer = function()
 end
 
 local loop_panes = function(func)
-	local panes = Constant.get_tbl_opened_panes()
+	local panes = Constant.get_active_tasks()
 	if #panes > 0 then
 		for _, pane in pairs(panes) do
 			vim.schedule(function()
@@ -32,60 +32,98 @@ function Integs:__jump_to_main_pane(main_pane_id)
 	self:run().jump_to_pane_id(main_pane_id)
 end
 
-function Integs:run_file(name_cmd, type_strategy)
-	local cur_pane_id = self:run().get_current_pane_id()
-	local tbl_opened_panes = Constant.get_tbl_opened_panes()
+function Integs:spawn_pane(name_cmd, type_strategy, tbl_active_tasks, cur_pane_id, is_respawn_pane)
+	vim.validate({ name_cmd = { name_cmd, "string" } }, { type_strategy = { type_strategy, "string" } })
 
-	local is_clear_sceen = true
+	tbl_active_tasks = tbl_active_tasks or {}
 
-	local selected_panes = Constant.get_selected_pane()
-	if selected_panes and selected_panes[1] then
-		if not self:run().is_pane_exists(selected_panes[1]) then
-			Constant.set_selected_pane({})
+	if is_respawn_pane then
+		self:_respawn_pane()
+	end
+
+	local sendID = Constant.get_sendID()
+	local pane_id = sendID
+	local pane_idx = self:run().get_pane_idx_from_id(pane_id)
+
+	local builder
+	for _, tasks in pairs(Constant.get_tasks()) do
+		if tasks.name == name_cmd then
+			builder = tasks.builder({})
 		end
 	end
 
-	if #tbl_opened_panes == 0 and (self:run().get_total_active_panes() == 1) then
-		self:_respawn_pane()
-		tbl_opened_panes = Constant.get_tbl_opened_panes()
-		local sendID = Constant.get_sendID()
-		local pane_id = sendID
-		local pane_idx = tonumber(self:run().get_pane_idx(pane_id))
-		local builder
-		for _, tasks in pairs(Constant.get_tasks()) do
-			if tasks.name == name_cmd then
-				builder = tasks.builder({})
+	if cur_pane_id == pane_id then
+		Util.error("Run file aborted: 'cur_pane_id' and 'pane_id' cannot have the same value.")
+		return
+	end
+
+	Constant.insert_active_tasks(pane_id, pane_idx, name_cmd, builder, type_strategy)
+
+	Constant.set_selected_pane(pane_id)
+
+	for _, task in pairs(tbl_active_tasks) do
+		if task.type_strategy == type_strategy then
+			if task.name == name_cmd then
+				self:run().send_pane_cmd_task(task, is_clear_sceen)
 			end
 		end
+	end
 
-		if cur_pane_id == pane_id then
-			Util.error("Aborting: 'cur_pane_id' and 'pane_id' cannot have the same value.")
-			return
+	self:__jump_to_main_pane(cur_pane_id)
+end
+
+function Integs:update_rmux(pane_id)
+	pane_id = pane_id or ""
+
+	local statusline_status = Constant.get_statusline_status()
+	if statusline_status and not statusline_status then
+		return
+	end
+
+	if pane_id and #pane_id > 0 then
+		if not self:run().is_pane_exists(pane_id) then
+			Constant.remove_from_active_tasks(pane_id)
 		end
+	end
 
-		Constant.set_insert_tbl_opened_panes(pane_id, pane_idx, name_cmd, builder, type_strategy)
-		os.execute("sleep 0.2")
+	local selected_pane = Constant.get_selected_pane()
 
-		Constant.set_selected_pane({ pane_id })
+	if selected_pane and #selected_pane > 0 then
+		if not self:run().is_pane_exists(selected_pane) then
+			Constant.set_selected_pane()
+			Constant.remove_from_active_tasks(selected_pane)
+		end
+	end
 
-		for _, task in pairs(tbl_opened_panes) do
-			if task.type_strategy == type_strategy then
-				if task.name == name_cmd then
-					self:run().send_pane_cmd(task, is_clear_sceen)
-					vim.uv.sleep(50)
-				end
+	local tbl_active_tasks = Constant.get_active_tasks()
+	if tbl_active_tasks and #tbl_active_tasks > 0 then
+		for _, task in pairs(tbl_active_tasks) do
+			if not self:run().is_pane_exists(task.pane_id) then
+				Constant.remove_from_active_tasks(task.pane_id)
 			end
 		end
+	end
+end
 
-		self:__jump_to_main_pane(cur_pane_id)
+function Integs:run_file(name_cmd, type_strategy)
+	local is_clear_sceen = true
+
+	local cur_pane_id = self:run().get_current_pane_id()
+	local tbl_active_tasks = Constant.get_active_tasks()
+
+	self:update_rmux()
+
+	if #tbl_active_tasks == 0 and (self:run().get_total_active_panes() == 1) then
+		local respawn_pane = true
+		self:spawn_pane(name_cmd, type_strategy, tbl_active_tasks, cur_pane_id, respawn_pane)
 		return
 	end
 
 	local _task
-	for _, task in pairs(tbl_opened_panes) do
+	for _, task in pairs(tbl_active_tasks) do
 		if task.type_strategy == type_strategy then
-			for _, pane_opened in pairs(self:run().get_lists_pane_id_opened()) do
-				if task.pane_id == pane_opened and task.name == name_cmd then
+			for _, pane_id_open in pairs(self:run().get_lists_pane_id_opened()) do
+				if task.pane_id == pane_id_open and task.name == name_cmd then
 					_task = task
 				end
 			end
@@ -93,37 +131,12 @@ function Integs:run_file(name_cmd, type_strategy)
 	end
 
 	if _task == nil then
-		self:_respawn_pane(true)
-		tbl_opened_panes = Constant.get_tbl_opened_panes()
-		local sendID = Constant.get_sendID()
-		local pane_id = sendID
-		local pane_idx = tonumber(self:run().get_pane_idx(pane_id))
-		local builder
-		for _, tasks in pairs(Constant.get_tasks()) do
-			if tasks.name == name_cmd then
-				builder = tasks.builder({})
-			end
-		end
-
-		Constant.set_insert_tbl_opened_panes(pane_id, pane_idx, name_cmd, builder, type_strategy)
-		vim.uv.sleep(100)
-
-		for _, task in pairs(tbl_opened_panes) do
-			if task.type_strategy == type_strategy then
-				if task.name == name_cmd then
-					self:run().send_pane_cmd(task, is_clear_sceen)
-					vim.uv.sleep(100)
-				end
-			end
-		end
-
-		self:__jump_to_main_pane(cur_pane_id)
-		return
+		local respawn_pane = true
+		self:spawn_pane(name_cmd, type_strategy, tbl_active_tasks, cur_pane_id, respawn_pane)
 	end
 
-	if _task.name == name_cmd then
-		self:run().send_pane_cmd(_task, is_clear_sceen)
-		vim.uv.sleep(100)
+	if _task and _task.name == name_cmd then
+		self:run().send_pane_cmd_task(_task, is_clear_sceen)
 		self:__jump_to_main_pane(cur_pane_id)
 	end
 end
@@ -145,7 +158,7 @@ function Integs:run_all(list_tasks, type_strategy)
 				end
 
 				local pane_id = self:run().open_vertical_pane(pane_strategy, pane_size)
-				local pane_idx = tonumber(self:run().get_pane_idx(pane_id))
+				local pane_idx = self:run().get_pane_idx_from_id(pane_id)
 				local builder = lang_task.builder({})
 				local name_cmd = lang_task.builder({}).cmd
 
@@ -154,19 +167,19 @@ function Integs:run_all(list_tasks, type_strategy)
 				end
 
 				if type(name_cmd) == "string" then
-					Constant.set_insert_tbl_opened_panes(pane_id, pane_idx, name_cmd, builder, type_strategy)
+					Constant.insert_active_tasks(pane_id, pane_idx, name_cmd, builder, type_strategy)
 				end
 			end
 		end
 	end
 
-	self:run().reset_resize_pane(cur_pane_id)
+	self:run().reset_size_pane()
 	self:run().jump_to_pane_id(cur_pane_id)
 
 	loop_panes(function(pane)
 		if pane.type_strategy == type_strategy then
 			local is_clear_sceen = true
-			self:run().send_pane_cmd(pane, is_clear_sceen)
+			self:run().send_pane_cmd_task(pane, is_clear_sceen)
 			self:run().jump_to_pane_id(cur_pane_id)
 		end
 	end)
@@ -207,78 +220,41 @@ function Integs:_respawn_pane(expand_pane)
 	local cwd = vim.fn.getcwd()
 
 	local total_panes = self:run().get_total_active_panes()
+
 	if total_panes == 1 then
 		self:run().create_new_pane(cwd, false)
 	else
 		self:run().create_new_pane(cwd, true)
 	end
-	vim.uv.sleep(100)
 end
 
 function Integs:send_line()
-	local selected_panes = Constant.get_selected_pane()
-	if not selected_panes or (#selected_panes == 0) then
+	local selected_pane = Constant.get_selected_pane()
+	if not selected_pane or (#selected_pane == 0) then
 		Integs:select_target_panes()
 		return
 	end
-	self:run().send_line(selected_panes[1])
+	self:run().send_line(selected_pane)
 end
 
 function Integs:send_line_range()
-	local selected_panes = Constant.get_selected_pane()
-	if not selected_panes or (#selected_panes == 0) then
+	local selected_pane = Constant.get_selected_pane()
+	if not selected_pane or (#selected_pane == 0) then
 		Integs:select_target_panes()
 		return
 	end
-	self:run().send_range_line(selected_panes[1])
+	self:run().send_range_line(selected_pane)
 end
 
 function Integs:select_target_panes(is_watcher)
 	is_watcher = is_watcher or false
 
-	local cur_pane_id = self:run().get_current_pane_id()
-
-	local pane_lists = self:run().get_lists_pane_id_opened()
-
 	if pane_lists and #pane_lists == 1 then
 		Util.warn("Only one pane is open. No action taken")
 		return
 	end
+	local opts = self:run().fzf_select_panes(is_watcher)
 
-	-- Remove pane_id from our main pane id
-	local pane_opened = {}
-	for _, pane_id in pairs(pane_lists) do
-		if cur_pane_id ~= pane_id then
-			pane_opened[#pane_opened + 1] = pane_id
-		end
-	end
-
-	local tbl_taks_pane_opened = {}
-	local tbl_opened_panes = Constant.get_tbl_opened_panes()
-	for _, p_id in pairs(pane_opened) do
-		for _, task in pairs(tbl_opened_panes) do
-			if task.pane_id == p_id then
-				tbl_taks_pane_opened[p_id] = {
-					pane_id = task.pane_id,
-					window_idx = task.pane_idx,
-					builder = task.builder,
-				}
-			end
-		end
-		-- Add pane IDs that are not present in the table `tbl_opened_panes`
-		if not tbl_taks_pane_opened[p_id] then
-			tbl_taks_pane_opened[p_id] = {
-				pane_id = p_id,
-			}
-		end
-	end
-
-	local list_panes = tbl_taks_pane_opened
-	if Util.tablelength(tbl_taks_pane_opened) == 0 then
-		list_panes = pane_opened
-	end
-
-	local opts = { results = list_panes, is_watcher = is_watcher }
 	Picker.select_pane(Integs, opts)
 end
 
@@ -287,13 +263,13 @@ function Integs:send_cmd() -- pengganti openREPL
 end
 
 function Integs:send_signal_interrupt()
-	local selected_panes = Constant.get_selected_pane()
-	if not selected_panes or (#selected_panes == 0) then
+	local selected_pane = Constant.get_selected_pane()
+	if not selected_pane or (#selected_pane == 0) then
 		Integs:select_target_panes()
 		return
 	end
 
-	self:run().send_interrupt(selected_panes[1])
+	self:run().send_interrupt(selected_pane)
 end
 
 function Integs:send_signal_interrupt_all()
@@ -321,15 +297,13 @@ function Integs:set_au_watcher()
 			pattern = "*",
 			group = augroup,
 			callback = function()
-				local selected_panes = Constant.get_selected_pane()
-				local tbl_opened_panes = Constant.get_tbl_opened_panes()
+				local selected_pane = Constant.get_selected_pane()
+				local tbl_active_tasks = Constant.get_active_tasks()
 
-				for _, pane_id in pairs(selected_panes) do
-					if self:run().is_pane_exists(pane_id) then
-						for _, task in pairs(tbl_opened_panes) do
-							if task.pane_id == pane_id then
-								self:run_file(task.name, "shell")
-							end
+				if self:run().is_pane_exists(selected_pane) then
+					for _, task in pairs(tbl_active_tasks) do
+						if task.pane_id == selected_pane then
+							self:run_file(task.name, "shell")
 						end
 					end
 				end
@@ -352,37 +326,38 @@ function Integs:set_au_autokill()
 end
 
 function Integs:find_err()
-	local tbl_opened_panes = Constant.get_tbl_opened_panes()
-	if #tbl_opened_panes == 0 then
+	local tbl_active_tasks = Constant.get_active_tasks()
+	if #tbl_active_tasks == 0 then
 		Util.warn("No task running")
 		return
 	end
 
-	local target_panes = {}
 	local opts = { title = "Grep Error" }
 	local cur_pane_id = self:run().get_current_pane_id()
 
-	local selected_panes = Constant.get_selected_pane()
-	if not selected_panes or (#selected_panes == 0) then
+	local selected_pane = Constant.get_selected_pane()
+	if not selected_pane or (#selected_pane == 0) then
 		Integs:select_target_panes()
 		return
 	end
 
-	if #selected_panes > 0 then
-		target_panes = selected_panes
-	else
-		for _, task in pairs(tbl_opened_panes) do
-			if task.pane_id then
-				if target_panes[task.pane_id] ~= nil then
-					target_panes[#target_panes + 1] = task.pane_id
-				end
-			end
-		end
-	end
+	-- if #selected_pane > 0 then
+	-- 	target_panes = selected_pane
+	-- else
+	-- 	for _, task in pairs(tbl_active_tasks) do
+	-- 		if task.pane_id then
+	-- 			if target_panes[task.pane_id] ~= nil then
+	-- 				target_panes[#target_panes + 1] = task.pane_id
+	-- 			end
+	-- 		end
+	-- 	end
+	-- end
 
-	for _, task in pairs(tbl_opened_panes) do
-		if task.pane_id then
+	for _, task in pairs(tbl_active_tasks) do
+		-- TODO: set warning jika task.pane_id  tidak sama yang di select dan juga
+		if task.pane_id and task.pane_id == selected_pane then
 			local pm = Problem_matcher.resolve_problem_matcher(task.builder.components[1].problem_matcher)
+			-- TODO: hentikan pm jika tidak ada atau nil, hentikan grep err nya
 			if pm then
 				local parser_defn = Problem_matcher.get_parser_from_problem_matcher(pm, {})
 				opts.regex = parser_defn
@@ -390,15 +365,23 @@ function Integs:find_err()
 		end
 	end
 
-	if #target_panes == 1 then
-		opts.title = opts.title .. " Pane " .. target_panes[1]
-	else
-		opts.title = opts.title .. " Panes [ " .. table.concat(target_panes, " ") .. " ]"
-	end
+	-- TODO: resize pane dahulu jika berjalan di tmux, karena pane width kecil ga bisa di grab secara optimal
+	-- > get size pane
+	-- tmux display -p "#{pane_width}x#{pane_height}"
+	-- > Ubah tinggi pane jadi 20 baris
+	-- tmux resize-pane -y 20
+	-- > Ubah lebar pane jadi 80 kolom
+	-- tmux resize-pane -x 80
+
+	-- if #target_panes == 1 then
+	opts.title = opts.title .. " Pane " .. selected_pane
+	-- else
+	-- 	opts.title = opts.title .. " Panes [ " .. table.concat(target_panes, " ") .. " ]"
+	-- end
 
 	local is_overseer = is_not_run_overseer()
 
-	Picker.grep_err(Integs, Integs.run(self), cur_pane_id, target_panes, opts, is_overseer)
+	Picker.grep_err(Integs, Integs.run(self), cur_pane_id, selected_pane, opts, is_overseer)
 end
 
 function Integs:kill_pane(pane_id)
@@ -406,16 +389,7 @@ function Integs:kill_pane(pane_id)
 
 	self:run().kill_pane(pane_id)
 
-	-- Delete pane_id jika terdapat pada `tbl_opened_panes`
-	Constant.remove_pane_from_opened(pane_id)
-
-	-- Delete pane_id jika terdapat pada `selected_panes`
-	local selected_panes = Constant.get_selected_pane()
-	if selected_panes and selected_panes[1] then
-		if not self:run().is_pane_exists(selected_panes[1]) then
-			Constant.set_selected_pane({})
-		end
-	end
+	self:update_rmux(pane_id)
 end
 
 function Integs:close_all_panes(is_only_settings)
@@ -432,8 +406,8 @@ function Integs:close_all_panes(is_only_settings)
 		end)
 	end
 
-	Constant.set_selected_pane({})
-	Config.settings.base.tbl_opened_panes = {}
+	Constant.set_selected_pane()
+	Config.settings.base.active_tasks = {}
 end
 
 return Integs

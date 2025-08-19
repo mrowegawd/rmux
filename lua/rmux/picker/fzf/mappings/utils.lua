@@ -140,27 +140,16 @@ function M.default_target(Integs, opts)
 			return
 		end
 
-		local pane_id = {}
-		local msg_selected_pane
-
-		if #selected == 1 then
-			local slice_str = vim.split(selected[1], " ")
-			pane_id[#pane_id + 1] = slice_str[1]
-			msg_selected_pane = slice_str[1]
-		end
-
-		if #selected > 1 then
-			for _, x in pairs(selected) do
-				local slice_str = vim.split(x, " ")
-				pane_id[#pane_id + 1] = slice_str[1]
-				msg_selected_pane = "[ " .. table.concat(pane_id, " ") .. " ]"
-			end
-		end
+		local slice_str = vim.split(selected[1], " ")
+		local pane_id = slice_str[1]
+		local msg_selected_pane = pane_id
 
 		Constant.set_selected_pane(pane_id)
 
-		if opts.is_watcher then
-			Constant.set_watcher_status(opts.is_watcher)
+		local is_watcher = opts.is_watcher
+
+		if is_watcher then
+			Constant.set_watcher_status(is_watcher)
 			Integs:set_au_watcher()
 			Util.info("Set watcher pane: " .. msg_selected_pane)
 		else
@@ -171,11 +160,17 @@ end
 
 function M.default_select(Integs, is_overseer)
 	return function(selected, _)
-		if is_overseer then
-			vim.cmd(selected[1])
+		local sel = selected[1]
+		if sel == nil then
 			return
 		end
-		Integs:generator_cmd_panes(selected[1])
+
+		if is_overseer then
+			vim.cmd(sel)
+			return
+		end
+
+		Integs:generator_cmd_panes(sel)
 	end
 end
 
@@ -216,9 +211,6 @@ function M.pane_kill(Integs)
 		if pane_id then
 			Integs:kill_pane(pane_id)
 		end
-
-		-- NOTE: reload need it
-		-- require("fzf-lua").actions.resume()
 	end
 end
 
@@ -406,6 +398,10 @@ end
 
 function M.send_to_qf(results)
 	return function(selected, _)
+		if #selected == 0 then
+			return
+		end
+
 		local items = {}
 
 		if #selected > 1 then
@@ -443,6 +439,10 @@ end
 
 function M.send_to_qf_all(results)
 	return function(selected, _)
+		if #selected == 0 then
+			return
+		end
+
 		local items = {}
 
 		for _, sel in pairs(selected) do
@@ -469,6 +469,10 @@ end
 
 function M.send_to_loc(results)
 	return function(selected, _)
+		if #selected == 0 then
+			return
+		end
+
 		local items = {}
 
 		if #selected > 1 then
@@ -504,6 +508,10 @@ end
 
 function M.send_to_loc_all(results)
 	return function(selected, _)
+		if #selected == 0 then
+			return
+		end
+
 		local items = {}
 
 		for _, sel in pairs(selected) do
@@ -528,6 +536,10 @@ end
 
 function M.buf_send_to_qf(pattern)
 	return function(selected, _)
+		if #selected == 0 then
+			return
+		end
+
 		local items = {}
 
 		if #selected > 1 then
@@ -565,6 +577,10 @@ end
 
 function M.buf_send_to_qf_all(pattern)
 	return function(selected, _)
+		if #selected == 0 then
+			return
+		end
+
 		local items = {}
 
 		for _, sel in pairs(selected) do
@@ -591,6 +607,10 @@ end
 
 function M.buf_send_to_loc(pattern)
 	return function(selected, _)
+		if #selected == 0 then
+			return
+		end
+
 		local items = {}
 
 		if #selected > 1 then
@@ -626,6 +646,10 @@ end
 
 function M.buf_send_to_loc_all(pattern)
 	return function(selected, _)
+		if #selected == 0 then
+			return
+		end
+
 		local items = {}
 
 		for _, sel in pairs(selected) do

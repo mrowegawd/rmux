@@ -52,7 +52,7 @@ function M.send_runfile(opts)
 	local pane_num = ToggletermUtil.get_pane_num(Constant.get_sendID())
 	local open_pane
 
-	Constant.set_insert_tbl_opened_panes(pane_id, pane_num, open_pane, state_cmd, opts.command, opts.regex)
+	Constant.insert_active_tasks(pane_id, pane_num, open_pane, state_cmd, opts.command, opts.regex)
 end
 
 function M.send_interrupt()
@@ -73,7 +73,7 @@ local status_pane_repl = false
 function M.openREPL(opts, state_cmd)
 	__respawn_term()
 
-	local tbl_opened_panes = Constant.get_tbl_opened_panes()
+	local tbl_opened_panes = Constant.get_open_tasks_tbl()
 	local term_ops = Constant.find_state_cmd_on_tbl_opened_panes(state_cmd)
 
 	if not status_pane_repl then
@@ -81,7 +81,7 @@ function M.openREPL(opts, state_cmd)
 			local pane_id = tostring(Constant.get_sendID())
 			local pane_num = tostring(Constant.get_sendID())
 			local open_pane
-			Constant.set_insert_tbl_opened_panes(pane_id, pane_num, open_pane, state_cmd, opts.command, opts.regex)
+			Constant.insert_active_tasks(pane_id, pane_num, open_pane, state_cmd, opts.command, opts.regex)
 		else
 			status_pane_repl = true
 			local cmd_string = opts.command
@@ -90,10 +90,10 @@ function M.openREPL(opts, state_cmd)
 			if term_ops ~= nil then
 				toggleterm.exec(cmd_string, tonumber(term_ops.pane_id))
 			else
-				local pane_id = tostring(#tbl_opened_panes + 1)
-				local pane_num = tostring(#tbl_opened_panes + 1)
+				local pane_id = tostring(#tbl_active_tasks + 1)
+				local pane_num = tostring(#tbl_active_tasks + 1)
 				local open_pane
-				Constant.set_insert_tbl_opened_panes(pane_id, pane_num, open_pane, state_cmd, opts.command, opts.regex)
+				Constant.insert_active_tasks(pane_id, pane_num, open_pane, state_cmd, opts.command, opts.regex)
 				ToggletermUtil.close_toggleterm()
 				toggleterm.exec(cmd_string, tonumber(pane_id))
 			end
@@ -121,7 +121,7 @@ function M.open_multi_panes(layouts, state_cmd)
 			local pane_id = tostring(idx)
 			local pane_num = tostring(idx)
 
-			Constant.set_insert_tbl_opened_panes(
+			Constant.insert_active_tasks(
 				pane_id,
 				pane_num,
 				layouts_idx.open_pane,
@@ -145,7 +145,7 @@ function M.back_to_win_one()
 	end
 end
 function M.send_multi(state_cmd)
-	for _, pane in pairs(Constant.get_tbl_opened_panes()) do
+	for _, pane in pairs(Constant.get_open_tasks_tbl()) do
 		if pane.state_cmd == state_cmd then
 			-- toggleterm.exec(pane.command, tonumber(pane.pane_id))
 			pane.command = string.gsub(pane.command, "'", "")
@@ -169,7 +169,7 @@ function M.grep_string_pane()
 
 	if target_pane_num and vim.api.nvim_win_is_valid(target_pane_id) then
 		local pane_target
-		for _, panes in pairs(Constant.get_tbl_opened_panes()) do
+		for _, panes in pairs(Constant.get_open_tasks_tbl()) do
 			if panes.pane_id == tostring(target_pane_id) then
 				pane_target = panes
 			end

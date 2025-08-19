@@ -1,5 +1,4 @@
 local Config = require("rmux.config")
--- local Util = require("rmux.utils")
 local Constant = require("rmux.constant")
 
 local M = {}
@@ -13,33 +12,32 @@ local function capitalize_first_letter(str)
 end
 
 function M.get()
+	local Integs = require("rmux.integrations")
+
+	local statusline_status = Constant.get_statusline_status()
+	if statusline_status == nil then
+		Constant.statusline_is_up(true)
+	end
+
+	Integs:update_rmux()
+
 	local status = { task = 0, run_with = "", watch = "" }
 
-	if #Constant.get_tbl_opened_panes() > 0 then
-		local task = #Constant.get_tbl_opened_panes()
-		if tonumber(task) > 0 then
-			status.task = task
-		end
+	local tbl_active_tasks = Constant.get_active_tasks()
+
+	if tbl_active_tasks and #tbl_active_tasks > 0 then
+		status.task = #tbl_active_tasks
 	end
 
-	if #Config.settings.base.run_with > 0 then
-		local run_with = capitalize_first_letter(Config.settings.base.run_with)
-		if run_with then
-			status.run_with = run_with
-		end
+	local run_with = Config.settings.base.run_with
+	if run_with and #run_with > 0 then
+		run_with = capitalize_first_letter(run_with)
+		status.run_with = run_with
 	end
 
-	local selected_panes = Constant.get_selected_pane()
-	local selected = {}
-	if selected_panes and #selected_panes > 0 then
-		for _, value in ipairs(selected_panes) do
-			local watch = remove_percent(value)
-			selected[#selected + 1] = watch
-		end
-
-		if selected and #selected > 0 then
-			status.watch = selected
-		end
+	local selected_pane = Constant.get_selected_pane()
+	if selected_pane then
+		status.watch = remove_percent(selected_pane)
 	end
 
 	return status
