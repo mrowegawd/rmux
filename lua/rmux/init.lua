@@ -41,12 +41,12 @@ local cmds = {
 	--  ────────────────────────────────────────────────────────────
 	["RmuxSendline"] = function()
 		if err_loadMsg() then
-			Call.command(Config.settings.provider_cmd.RUN_SEND, true)
+			Call.command(Config.settings.provider_cmd.RUN_SEND)
 		end
 	end,
 	["RmuxSendlineV"] = function()
 		if err_loadMsg() then
-			Call.command(Config.settings.provider_cmd.RUN_VSEND, true)
+			Call.command(Config.settings.provider_cmd.RUN_VSEND)
 		end
 	end,
 	["RmuxSelectTargetPane"] = function()

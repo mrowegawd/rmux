@@ -301,6 +301,8 @@ function M.fzf_select_panes(is_watcher)
 		return
 	end
 
+	local items = {}
+
 	-- Remove pane_id from our main pane id
 	local pane_opened = {}
 	for _, pane_id in pairs(pane_lists) do
@@ -339,11 +341,17 @@ function M.fzf_select_panes(is_watcher)
 	-- Tasks in the select pane should follow tmux's index
 	local function format_results()
 		local temp = {}
+
 		for k, v in pairs(opts.results) do
-			if type(v) == "table" and v.builder ~= nil then
-				table.insert(temp, { name = k, pane_idx = v.pane_idx, cmd = v.builder.name })
+			if v.pane_idx then
+				if type(v) == "table" and v.builder ~= nil then
+					table.insert(temp, { name = k, pane_idx = v.pane_idx, cmd = v.builder.name })
+				else
+					table.insert(temp, { name = k, pane_idx = v.pane_idx, cmd = "" })
+				end
 			else
-				table.insert(temp, { name = k, pane_idx = v.pane_idx, cmd = "" })
+				local idx = M.get_pane_idx_from_id(k)
+				table.insert(temp, { name = k, pane_idx = tonumber(idx), cmd = "" })
 			end
 		end
 
@@ -351,7 +359,6 @@ function M.fzf_select_panes(is_watcher)
 			return a.pane_idx < b.pane_idx
 		end)
 
-		local items = {}
 		for _, res in pairs(temp) do
 			items[#items + 1] = res.name .. "  " .. res.cmd
 		end

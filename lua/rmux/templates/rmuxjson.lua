@@ -1,6 +1,10 @@
-local Config = require("rmux.config")
 local Constant = require("rmux.constant")
 local Util = require("rmux.utils")
+
+local Settings = Constant.get_settings()
+
+local file_rc = ".rmux/rmux.json"
+local file_rc_path = Settings.base.fullpath .. "/" .. file_rc
 
 local RMuxjson = {}
 RMuxjson.__index = RMuxjson
@@ -9,7 +13,6 @@ local overseer_vscode = require("overseer.template.vscode")
 -- local vs_util = require("overseer.template.vscode.vs_util")
 
 local json_data
-local file_rc
 
 -- local function validateJsonKeys(json_decode_data, expectKeys)
 -- 	for key, _ in pairs(json_decode_data) do
@@ -46,29 +49,30 @@ local function check_keys_decode_data_json(json_decode_data)
 end
 
 function RMuxjson:is_taskjson_exists()
-	file_rc = Config.settings.base.fullpath .. "/" .. Config.settings.base.file_rc
-	return Util.exists(file_rc)
+	return Util.exists(file_rc_path)
 end
 
 function RMuxjson:load()
-	if self:is_taskjson_exists() then
-		json_data = Util.read_json_file(file_rc)
+	if not Util.is_file(file_rc_path) then
+		return false
+	end
 
-		if check_keys_decode_data_json(json_data) then
-			local tbl_data = {}
-			for _, task in pairs(json_data.tasks) do
-				-- print(vim.inspect(task))
-				-- TODO: field 'pane' seharus nya di convert saat overseer.convert_vscode_task()??
-				local output_task = overseer_vscode.convert_vscode_task(task)
-				table.insert(tbl_data, output_task)
-			end
+	json_data = Util.read_json_file(file_rc_path)
 
-			Constant.set_template_provider("rmux")
-			Constant.insert_tbl_tasks(tbl_data)
-			return true
+	if check_keys_decode_data_json(json_data) then
+		local tbl_data = {}
+		for _, task in pairs(json_data.tasks) do
+			-- print(vim.inspect(task))
+			-- TODO: field 'pane' seharus nya di convert saat overseer.convert_vscode_task()??
+			local output_task = overseer_vscode.convert_vscode_task(task)
+			table.insert(tbl_data, output_task)
 		end
 
-		return false
+		Constant.insert_tbl_tasks(tbl_data)
+
+		Constant.set_template_provider("rmux")
+		Constant.set_file_rc(file_rc)
+		return true
 	end
 
 	return false

@@ -283,9 +283,9 @@ function M.grep_err(Integs, opts, is_overseer)
 		["ctrl-t"] = UtilFzfMapping.err_open_tab(opts.results),
 		["ctrl-w"] = UtilFzfMapping.overseer_watch(Integs, is_overseer),
 		["alt-q"] = UtilFzfMapping.send_to_qf(opts.results),
-		["alt-Q"] = { prefix = "select-all+accept", fn = UtilFzfMapping.send_to_qf_all(opts.results), },
+		["alt-Q"] = { prefix = "toggle-all", fn = UtilFzfMapping.send_to_qf_all(opts.results), },
 		["alt-l"] = UtilFzfMapping.send_to_loc(opts.results),
-		["alt-L"] = { prefix = "select-all+accept", fn = UtilFzfMapping.send_to_loc_all(opts.results), },
+		["alt-L"] = { prefix = "toggle-all", fn = UtilFzfMapping.send_to_loc_all(opts.results), },
 	}
 
 	fzflua.fzf_exec(contents, fzfopts)
@@ -359,9 +359,9 @@ function M.grep_buf()
 		["ctrl-t"] = UtilFzfMapping.buf_open_tab(pattern),
 
 		["alt-q"] = UtilFzfMapping.buf_send_to_qf(pattern),
-		["alt-Q"] = { prefix = "select-all+accept", fn = UtilFzfMapping.buf_send_to_qf_all(pattern) },
+		["alt-Q"] = { prefix = "toggle-all", fn = UtilFzfMapping.buf_send_to_qf_all(pattern) },
 		["alt-l"] = UtilFzfMapping.buf_send_to_loc(pattern),
-		["alt-L"] = { prefix = "select-all+accept", fn = UtilFzfMapping.buf_send_to_loc_all(pattern) },
+		["alt-L"] = { prefix = "toggle-all", fn = UtilFzfMapping.buf_send_to_loc_all(pattern) },
 	}
 
 	fzflua.fzf_exec(results, fzfopts)

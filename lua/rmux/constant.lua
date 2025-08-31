@@ -3,6 +3,10 @@ local Config = require("rmux.config")
 local M = {}
 
 function M.get_settings()
+	return Config.settings
+end
+
+function M.get_settings_base()
 	return Config.settings.base
 end
 
@@ -12,6 +16,16 @@ end
 
 function M.get_sendID()
 	return Config.settings.sendID
+end
+
+function M.set_run_with(run_with)
+	local base = M.get_settings_base()
+	base.run_with = run_with
+end
+
+function M.get_run_with()
+	local base = M.get_settings_base()
+	return base.run_with
 end
 
 function M.insert_tbl_tasks(tbl_data_task)
@@ -39,7 +53,7 @@ function M.insert_active_tasks(pane_id, pane_idx, name_cmd, builder, type_strate
 end
 
 function M.get_active_tasks()
-	local base = M.get_settings()
+	local base = M.get_settings_base()
 	return base.active_tasks
 end
 
@@ -69,67 +83,76 @@ function M.set_sendID(send_pane)
 end
 
 function M.get_size_pane()
-	local base = M.get_settings()
+	local base = M.get_settings_base()
 	return base.size_pane
 end
 
 function M.statusline_is_up(is_set)
-	local base = M.get_settings()
+	local base = M.get_settings_base()
 	base.statusline = is_set
 end
 
 function M.get_statusline_status()
-	local base = M.get_settings()
+	local base = M.get_settings_base()
 	return base.statusline
 end
 
 function M.set_selected_pane(panes_id)
 	panes_id = panes_id or ""
-	local base = M.get_settings()
+	local base = M.get_settings_base()
 	base.selected_pane = panes_id
 end
 
+function M.set_file_rc(file_rc)
+	file_rc = file_rc or ""
+	local base = M.get_settings_base()
+	base.file_rc = file_rc
+end
+
+function M.get_file_rc()
+	local base = M.get_settings_base()
+	return base.file_rc
+end
+
 function M.get_selected_pane()
-	local base = M.get_settings()
+	local base = M.get_settings_base()
 	return base.selected_pane
 end
 
 function M.set_watcher_status(status_watch)
 	vim.validate({ status_watch = { status_watch, "boolean" } })
-	if status_watch then
-		local base = M.get_settings()
-		base.is_watcher = status_watch
-	end
+	local base = M.get_settings_base()
+	base.is_watcher = status_watch
 end
 
 function M.get_watcher_status()
-	local base = M.get_settings()
+	local base = M.get_settings_base()
 	return base.is_watcher
 end
 
 function M.get_dir_filerc()
-	local base = M.get_settings()
+	local base = M.get_settings_base()
 	return base.rmuxpath
 end
 
 function M.get_template_provider()
-	local base = M.get_settings()
+	local base = M.get_settings_base()
 	return base.provider
 end
 
 function M.set_template_provider(provider_name)
 	vim.validate({ provider_name = { provider_name, "string" } })
-	local base = M.get_settings()
+	local base = M.get_settings_base()
 	base.provider = provider_name
 end
 
 function M.open_qf()
-	local base = M.get_settings()
+	local base = M.get_settings_base()
 	return base.quickfix.copen
 end
 
 function M.open_loc()
-	local base = M.get_settings()
+	local base = M.get_settings_base()
 	return base.quickfix.lopen
 end
 

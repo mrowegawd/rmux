@@ -249,13 +249,10 @@ end
 function Integs:select_target_panes(is_watcher)
 	is_watcher = is_watcher or false
 
-	if pane_lists and #pane_lists == 1 then
-		Util.warn("Only one pane is open. No action taken")
-		return
-	end
 	local opts = self:run().fzf_select_panes(is_watcher)
-
-	Picker.select_pane(Integs, opts)
+	if opts then
+		Picker.select_pane(Integs, opts)
+	end
 end
 
 function Integs:send_cmd() -- pengganti openREPL
@@ -289,9 +286,9 @@ end
 
 local augroup_name = "RmuxWatcher"
 function Integs:set_au_watcher()
-	if Constant.get_watcher_status() then
-		Integs:unset_augroup(augroup_name) -- avoid duplicate augroup
+	Integs:unset_augroup(augroup_name) -- avoid duplicate augroup
 
+	if Constant.get_watcher_status() then
 		local augroup = vim.api.nvim_create_augroup(augroup_name, { clear = true })
 		vim.api.nvim_create_autocmd("BufWritePost", {
 			pattern = "*",
@@ -320,7 +317,6 @@ function Integs:set_au_autokill()
 		group = augroup,
 		callback = function()
 			Integs:close_all_panes()
-			vim.cmd([[echoerr "helo"]])
 		end,
 	})
 end
@@ -407,6 +403,7 @@ function Integs:close_all_panes(is_only_settings)
 	end
 
 	Constant.set_selected_pane()
+	Constant.set_watcher_status(false)
 	Config.settings.base.active_tasks = {}
 end
 

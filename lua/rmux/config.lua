@@ -6,7 +6,7 @@ local default_settings = {
 		setnotif = true,
 		auto_run_tasks = true,
 		active_tasks = {},
-		run_with = "mux", -- tmux, wez, tt, toggleterm (tt.nvim)
+		run_with = "mux", -- tmux, wez, tt, toggleterm (tt.nvim) or 'auto'
 		auto_kill = true,
 		size_pane = 12,
 		rmuxpath = vim.fn.stdpath("cache") .. "/runmux/filerc",
@@ -30,7 +30,7 @@ function M.update_settings(opts)
 	opts = opts or {}
 	M.settings = merge_settings(default_settings, opts)
 
-	M.settings.run_support_with = { "mux", "toggleterm", "wez", "termim", "auto" }
+	M.settings.run_support_with = { "mux", "toggleterm", "overseer", "auto" }
 	M.settings.sendID = ""
 	M.settings.provider_cmd = {
 		RUN_FILE = "run_file",
